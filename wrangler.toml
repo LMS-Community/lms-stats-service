@@ -1,0 +1,9 @@
+name = "lms-stats"
+main = "src/index.ts"
+compatibility_date = "2024-04-05"
+compatibility_flags = ["nodejs_compat"]
+
+[[ d1_databases ]]
+binding = "DB" # available in your Worker on env.DB
+database_name = "lms-stats"
+database_id = ""
