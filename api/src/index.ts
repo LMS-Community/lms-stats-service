@@ -1,4 +1,4 @@
-import { Hono, Context } from 'hono'
+import { Hono, Context, Env } from 'hono'
 
 const app = new Hono()
 const versionCheck = new RegExp(/^\d{1,2}\.\d{1,3}\.\d{1,3}$/)
@@ -19,6 +19,7 @@ interface StatsData {
 }
 
 interface StatsSummary {
+    versions?: string[];
     countries?: string[];
     os?: string[];
     plugins?: {
@@ -32,33 +33,28 @@ interface ValueCountsObject {
     c: number;
 }
 
-// TODO - summarize days?
-
 app.get('/', async c => {
     return c.redirect('https://lyrion.org/analytics/', 301)
 })
 
 app.get('/api/stats', async (c: Context) => {
-    const result: StatsSummary = {}
+    const results: StatsSummary = {}
+
+    const getStats = async (identifier: string) => {
+        const { results } = await c.env.DB.prepare(`
+            SELECT JSON_EXTRACT(data, '$.${identifier}') AS v, COUNT(1) AS c
+            FROM servers
+            GROUP BY JSON_EXTRACT(data, '$.${identifier}')
+            ORDER BY c DESC;
+        `).all()
+
+        return results.map((item: ValueCountsObject) => { return { [item.v]: item.c } })
+    }
 
     try {
-        const { results: countries } = await c.env.DB.prepare(`
-            SELECT JSON_EXTRACT(data, '$.country') AS v, COUNT(1) AS c
-            FROM servers
-            GROUP BY JSON_EXTRACT(data, '$.country')
-            ORDER BY c DESC;
-        `).all()
-
-        result.countries = countries.map((country: ValueCountsObject) => { return { [country.v]: country.c } })
-
-        let { results: oss } = await c.env.DB.prepare(`
-            SELECT JSON_EXTRACT(data, '$.os') AS v, COUNT(1) AS c
-            FROM servers
-            GROUP BY JSON_EXTRACT(data, '$.os')
-            ORDER BY c DESC;
-        `).all()
-
-        result.os = oss.map((os: ValueCountsObject) => { return { [os.v]: os.c } })
+        results.versions = await getStats('version')
+        results.countries = await getStats('country')
+        results.os = await getStats('os')
 
         let { results: plugins } = await c.env.DB.prepare(`
             SELECT COUNT(1) AS c, JSON_EACH.value AS v
@@ -67,19 +63,14 @@ app.get('/api/stats', async (c: Context) => {
             ORDER BY c DESC;
         `).all()
 
-        result.plugins = plugins
-        result.plugins = {
-            names: plugins.map((plugin: ValueCountsObject) => `"${plugin.v}"`).join(','),
-            counts: plugins.map((plugin: ValueCountsObject) => plugin.c).join(','),
-        }
+        results.plugins = plugins.map((item: ValueCountsObject) => { return { [item.v]: item.c }})
     }
     catch(e) {
         console.error(e)
         return c.json({err: e}, 500)
     }
 
-    console.log(result)
-    return c.json(result)
+    return c.json(results)
 })
 
 app.post('/api/instance/:id/', async (c: Context) => {
