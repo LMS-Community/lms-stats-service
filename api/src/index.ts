@@ -1,5 +1,5 @@
-import { Hono, Context, Env } from 'hono'
-import { getSummary, StatsSummary } from '../../lib/stats'
+import { Hono, Context } from 'hono'
+import { getSummary } from '../../lib/stats'
 
 const app = new Hono()
 const versionCheck = new RegExp(/^\d{1,2}\.\d{1,3}\.\d{1,3}$/)
@@ -26,6 +26,26 @@ app.get('/', async c => {
 app.get('/api/stats', async (c: Context) => {
     try {
         return c.json(await getSummary(c.env.DB))
+    }
+    catch(e) {
+        console.error(e)
+        return c.json({err: e}, 500)
+    }
+})
+
+app.get('/api/stats/history', async (c: Context) => {
+    try {
+        // TODO group into buckets/windows using window functions (if they exist in D1 - https://www.sqlite.org/windowfunctions.html)
+        const { results } = await c.env.DB.prepare(`
+            SELECT summary.date AS d,
+                JSON_EXTRACT(data, '$.os') AS o,
+                JSON_EXTRACT(data, '$.versions') AS v,
+                JSON_EXTRACT(data, '$.players') AS p
+            FROM summary
+            ORDER BY d ASC;
+        `).all()
+
+        return c.json(results)
     }
     catch(e) {
         console.error(e)

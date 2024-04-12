@@ -9,4 +9,4 @@ database_name = ""
 database_id = ""
 
 [triggers]
-crons = ["54 7 * * *"]
+crons = ["14 0 * * *"]

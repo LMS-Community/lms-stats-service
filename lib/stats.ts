@@ -2,6 +2,7 @@ export interface StatsSummary {
     versions?: string[];
     countries?: string[];
     os?: string[];
+    players?: number;
     plugins?: {
         names: string;
         counts: number;
@@ -16,7 +17,7 @@ export interface ValueCountsObject {
 export async function getSummary(db: any, secs: number = 0): Promise<StatsSummary> {
     const results: StatsSummary = {}
 
-    const condition = (secs > 0) ? 'WHERE UNIXEPOCH(DATE()) - UNIXEPOCH(lastseen) < ' + secs.toString() : '';
+    const condition = (secs > 0) ? 'WHERE UNIXEPOCH(DATETIME()) - UNIXEPOCH(lastseen) < ' + secs.toString() : '';
 
     const getStats = async (identifier: string) => {
         const { results } = await db.prepare(`
