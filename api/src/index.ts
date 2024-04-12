@@ -12,11 +12,12 @@ interface StatsData {
     version: string;
     revision: string;
     perl: string;
-    players: number;
+    players?: number;
+    playerTypes?: object;
     plugins: string[];
     skin: string;
     language: string;
-    tracks: number;
+    tracks?: number;
 }
 
 app.get('/', async c => {
@@ -68,6 +69,7 @@ app.post('/api/instance/:id/', async (c: Context) => {
         platform = '',
         perl = '',
         players = 0,
+        playerTypes,
         plugins = [],
         skin = '',
         language = '',
@@ -85,9 +87,10 @@ app.post('/api/instance/:id/', async (c: Context) => {
         || language.length > 5
         || plugins.length > 200
         || (version && !versionCheck.test(version))
-        || (players && !Number.isInteger(players))
-        || (tracks && !Number.isInteger(tracks))
+        || (players && !Number.isInteger(+players))
+        || (tracks && !Number.isInteger(+tracks))
         || (plugins.find(plugin => plugin.length > 25))
+        || (playerTypes && Object.keys(playerTypes).length > 20)
     ) {
         return validationError(c)
     }
@@ -95,7 +98,7 @@ app.post('/api/instance/:id/', async (c: Context) => {
     const country = c.req.raw?.cf?.country;
 
     const data = stringifyDataObject({
-        os, osname, platform, version, revision, perl, players, plugins, country, skin, language, tracks
+        os, osname, platform, version, revision, perl, players, playerTypes, plugins, country, skin, language, tracks
     })
 
     const { success } = await c.env.DB.prepare(`
