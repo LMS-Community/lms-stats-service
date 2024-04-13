@@ -8,13 +8,13 @@ async function updateSummary(env: any) {
     try {
         const summaryData = await getSummary(env.DB, INTERVAL)
 
-        const { results } = env.DB.prepare(`
+        const { results } = await env.DB.prepare(`
             SELECT SUM(JSON_EXTRACT(data, '$.players')) AS p
             FROM servers
             WHERE UNIXEPOCH(DATETIME()) - UNIXEPOCH(lastseen) < ${INTERVAL}
-        `)
+        `).all()
 
-        if (results) summaryData.players = results
+        if (results) summaryData.players = results[0].p
 
         const dataString = JSON.stringify(summaryData)
 

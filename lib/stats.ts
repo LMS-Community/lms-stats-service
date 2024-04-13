@@ -33,13 +33,35 @@ export async function getSummary(db: any, secs: number = 0): Promise<StatsSummar
 
     results.versions = await getStats('version')
     results.countries = await getStats('country')
-    results.os = await getStats('os')
 
-    let { results: plugins } = await db.prepare(`
-        SELECT COUNT(1) AS c, JSON_EACH.value AS v
-        FROM servers, JSON_EACH(data, '$.plugins')
-        GROUP BY JSON_EACH.value
+    const { results: os } = await db.prepare(`
+        SELECT COUNT(1) AS c, (os || " - " || platform) AS v
+        FROM (
+            SELECT CASE WHEN osname LIKE '%windows%' THEN 'Windows' ELSE
+                CASE WHEN osname LIKE '%macos%' THEN 'macOS' ELSE osname END
+            END AS os, REPLACE(platform, '-linux', '') AS platform
+            FROM (
+                SELECT JSON_EXTRACT(data, '$.osname') AS osname, JSON_EXTRACT(data, '$.platform') AS platform
+                FROM servers
+                ${ condition }
+            )
+        )
+        WHERE os NOT NULL
+        GROUP BY os, platform
         ORDER BY c DESC;
+    `).all();
+
+    results.os = os.map((item: ValueCountsObject) => { return { [item.v]: item.c } })
+
+    const { results: plugins } = await db.prepare(`
+        SELECT * FROM (
+            SELECT COUNT(1) AS c, JSON_EACH.value AS v
+            FROM servers, JSON_EACH(data, '$.plugins')
+            ${ condition }
+            GROUP BY JSON_EACH.value
+            ORDER BY c DESC
+        )
+        WHERE c > 5
     `).all()
 
     results.plugins = plugins.map((item: ValueCountsObject) => { return { [item.v]: item.c }})
