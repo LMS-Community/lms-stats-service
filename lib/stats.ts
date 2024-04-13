@@ -3,6 +3,7 @@ export interface StatsSummary {
     countries?: string[];
     os?: string[];
     players?: number;
+    playerTypes?: {};
     plugins?: {
         names: string;
         counts: number;
@@ -33,6 +34,20 @@ export async function getSummary(db: any, secs: number = 0): Promise<StatsSummar
 
     results.versions = await getStats('version')
     results.countries = await getStats('country')
+
+    const { results: playerTypes } = await db.prepare(`
+        SELECT model AS v, SUM(count) AS c
+        FROM (
+            SELECT key AS model, value AS count, type, path
+            FROM servers, JSON_TREE(data, '$.playerTypes')
+            ${ condition }
+        )
+        WHERE type = 'integer' AND path = '$.playerTypes'
+        GROUP BY model
+        ORDER BY c DESC;
+    `).all()
+
+    results.playerTypes = playerTypes.map((item: ValueCountsObject) => { return { [item.v]: item.c } })
 
     const { results: os } = await db.prepare(`
         SELECT COUNT(1) AS c, (os || " - " || platform) AS v
