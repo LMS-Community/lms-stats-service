@@ -1,12 +1,16 @@
 import type { Event, ExecutionContext } from "@cloudflare/workers-types/experimental"
-import { getSummary } from '../../lib/stats'
+import { StatsSummary, getSummary } from '../../lib/stats'
+
+interface HistoricSummary extends StatsSummary {
+    players: number
+}
 
 // How far back do we go to consider an installation active?
 const INTERVAL = 3600 * 24 * 30
 
 async function updateSummary(env: any) {
     try {
-        const summaryData = await getSummary(env.DB, INTERVAL)
+        const summaryData = await getSummary(env.DB, INTERVAL) as HistoricSummary
 
         const { results } = await env.DB.prepare(`
             SELECT SUM(JSON_EXTRACT(data, '$.players')) AS p
