@@ -1,13 +1,10 @@
 export interface StatsSummary {
-    versions?: string[];
-    countries?: string[];
-    os?: string[];
-    players?: number;
-    playerTypes?: {};
-    plugins?: {
-        names: string;
-        counts: number;
-    };
+    versions?: object[];
+    countries?: object[];
+    os?: object[];
+    connectedPlayers?: object[]
+    playerTypes?: object[];
+    plugins?: object[];
 }
 
 export interface ValueCountsObject {
@@ -34,6 +31,7 @@ export async function getSummary(db: any, secs: number = 0): Promise<StatsSummar
 
     results.versions = await getStats('version')
     results.countries = await getStats('country')
+    results.connectedPlayers = await getStats('players')
 
     const { results: playerTypes } = await db.prepare(`
         SELECT model AS v, SUM(count) AS c
