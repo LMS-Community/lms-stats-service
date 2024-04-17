@@ -108,7 +108,7 @@ app.post('/api/instance/:id/', async (c: Context) => {
 
     if (success) {
         c.status(201)
-        return c.text("Created or updated")
+        return c.text("")
     } else {
         c.status(500)
         return c.text("Something went wrong")
@@ -117,8 +117,8 @@ app.post('/api/instance/:id/', async (c: Context) => {
 
 async function validationError(c: Context) {
     console.error(await c.req.json())
-    c.status(400)
-    return c.text("Invalid data");
+    c.status(201)
+    return c.text("");
 }
 
 function stringifyDataObject(data: object) {
