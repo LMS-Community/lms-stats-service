@@ -5,6 +5,7 @@ export interface StatsSummary {
     connectedPlayers?: object[]
     playerTypes?: object[];
     plugins?: object[];
+    tracks?: object[];
 }
 
 export interface ValueCountsObject {
@@ -57,7 +58,7 @@ export async function getTrackCountBins(db: any, secs: number = 0): Promise<Valu
             )
         )
         GROUP BY v
-        ORDER BY v DESC;
+        ORDER BY v;
     `).all()
 
     return results.map((item: ValueCountsObject) => { return { [item.v]: item.c } })
@@ -151,6 +152,7 @@ export async function getSummary(db: any, secs: number = 0): Promise<StatsSummar
         connectedPlayers: await getPlayers(db, secs),
         playerTypes: await getPlayerTypes(db, secs),
         os: await getOS(db, secs),
-        plugins : await getPlugins(db, secs)
+        plugins: await getPlugins(db, secs),
+        tracks: await getTrackCountBins(db, secs)
     }
 }
