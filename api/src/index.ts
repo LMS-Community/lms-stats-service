@@ -1,5 +1,17 @@
 import { Hono, Context } from 'hono'
-import { getSummary } from '../../lib/stats'
+
+import {
+    ValueCountsObject,
+    getCountries,
+    getHistory,
+    getOS,
+    getPlayerTypes,
+    getPlayers,
+    getPlugins,
+    getSummary,
+    getTrackCountBins,
+    getVersions
+} from '../../lib/stats';
 
 const app = new Hono()
 const versionCheck = new RegExp(/^\d{1,2}\.\d{1,3}\.\d{1,3}$/)
@@ -34,19 +46,27 @@ app.get('/api/stats', async (c: Context) => {
     }
 })
 
-app.get('/api/stats/history', async (c: Context) => {
-    try {
-        // TODO group into buckets/windows using window functions (if they exist in D1 - https://www.sqlite.org/windowfunctions.html)
-        const { results } = await c.env.DB.prepare(`
-            SELECT summary.date AS d,
-                JSON_EXTRACT(data, '$.os') AS o,
-                JSON_EXTRACT(data, '$.versions') AS v,
-                JSON_EXTRACT(data, '$.players') AS p
-            FROM summary
-            ORDER BY d ASC;
-        `).all()
+app.get('/api/stats/:dataset', async (c: Context) => {
+    const { dataset } = c.req.param()
 
-        return c.json(results)
+    if (!dataset) return c.redirect('/api/stats', 301)
+
+    const methods: { [key: string]: (db: any, secs?: number) => Promise<ValueCountsObject[]|Object[]> } = {
+        countries: getCountries,
+        history: getHistory,
+        os: getOS,
+        players: getPlayers,
+        playerTypes: getPlayerTypes,
+        plugins: getPlugins,
+        trackcounts: getTrackCountBins,
+        versions: getVersions
+    };
+
+    const method = methods[dataset]
+    if (!method) return c.text('404 Not Found', 404)
+
+    try {
+        return c.json(await method(c.env.DB))
     }
     catch(e) {
         console.error(e)
