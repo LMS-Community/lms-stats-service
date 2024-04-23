@@ -76,6 +76,17 @@ export async function getPlayers(db: any, secs: number = 0): Promise<ValueCounts
     return getStats(db, 'players', secs)
 }
 
+export async function getPlayerCount(db: any, secs: number = 0): Promise<number> {
+    const { results } = await db.prepare(`
+        SELECT SUM(JSON_EXTRACT(data, '$.players')) AS p
+        FROM servers
+        ${ getTimeCondition(secs) }
+    `).all()
+
+    return results[0].p
+}
+
+
 export async function getPlayerTypes(db: any, secs: number = 0): Promise<ValueCountsObject[]> {
     const { results: playerTypes } = await db.prepare(`
         SELECT model AS v, SUM(count) AS c
@@ -152,7 +163,6 @@ export async function getSummary(db: any, secs: number = 0): Promise<StatsSummar
         connectedPlayers: await getPlayers(db, secs),
         playerTypes: await getPlayerTypes(db, secs),
         os: await getOS(db, secs),
-        plugins: await getPlugins(db, secs),
         tracks: await getTrackCountBins(db, secs)
     }
 }

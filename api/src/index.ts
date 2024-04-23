@@ -5,6 +5,7 @@ import {
     getCountries,
     getHistory,
     getOS,
+    getPlayerCount,
     getPlayerTypes,
     getPlayers,
     getPlugins,
@@ -12,6 +13,9 @@ import {
     getTrackCountBins,
     getVersions
 } from '../../lib/stats';
+
+// How far back do we go to consider an installation active?
+const INTERVAL = 86400 * 30
 
 const app = new Hono()
 const versionCheck = new RegExp(/^\d{1,2}\.\d{1,3}\.\d{1,3}$/)
@@ -26,6 +30,7 @@ interface StatsData {
     perl: string;
     players?: number;
     playerTypes?: object;
+    playerCount?: number;
     plugins: string[];
     skin: string;
     language: string;
@@ -38,7 +43,7 @@ app.get('/', async c => {
 
 app.get('/api/stats', async (c: Context) => {
     try {
-        return c.json(await getSummary(c.env.DB))
+        return c.json(await getSummary(c.env.DB, INTERVAL))
     }
     catch(e) {
         console.error(e)
@@ -51,12 +56,13 @@ app.get('/api/stats/:dataset', async (c: Context) => {
 
     if (!dataset) return c.redirect('/api/stats', 301)
 
-    const methods: { [key: string]: (db: any, secs?: number) => Promise<ValueCountsObject[]|Object[]> } = {
+    const methods: { [key: string]: (db: any, secs?: number) => Promise<ValueCountsObject[]|Object[]|number> } = {
         countries: getCountries,
         history: getHistory,
         os: getOS,
         players: getPlayers,
         playerTypes: getPlayerTypes,
+        playerCount: getPlayerCount,
         plugins: getPlugins,
         trackcounts: getTrackCountBins,
         versions: getVersions
