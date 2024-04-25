@@ -64,7 +64,7 @@ app.get('/api/stats/:dataset', async (c: Context) => {
         playerTypes: getPlayerTypes,
         playerCount: getPlayerCount,
         plugins: getPlugins,
-        trackcounts: getTrackCountBins,
+        trackCounts: getTrackCountBins,
         versions: getVersions
     };
 

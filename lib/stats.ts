@@ -41,7 +41,9 @@ export async function getTrackCountBins(db: any, secs: number = 0): Promise<Valu
                                     CASE WHEN tc > 5000 THEN 5000 ELSE
                                         CASE WHEN tc > 1000 THEN 1000 ELSE
                                             CASE WHEN tc > 500 THEN 500 ELSE
-                                                0
+                                                CASE WHEN tc > 0 THEN 1 ELSE
+                                                    0
+                                                END
                                             END
                                         END
                                     END
