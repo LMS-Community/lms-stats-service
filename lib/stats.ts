@@ -112,7 +112,9 @@ export async function getOS(db: any, secs: number = 0): Promise<ValueCountsObjec
             SELECT CASE WHEN osname LIKE '%windows%' AND osname LIKE '%64-bit%' THEN 'Windows (64-bit)'
                 ELSE
                     CASE WHEN osname LIKE '%windows%' THEN 'Windows (32-bit)' ELSE
-                        CASE WHEN osname LIKE '%macos%' THEN 'macOS' ELSE osname END
+                        CASE WHEN osname LIKE '%Debian%Docker%' THEN 'Debian (Docker)' ELSE
+                            CASE WHEN osname LIKE '%macos%' THEN 'macOS' ELSE osname END
+                        END
                     END
             END AS os, REPLACE(platform, '-linux', '') AS platform
             FROM (

@@ -104,14 +104,14 @@ app.post('/api/instance/:id/', async (c: Context) => {
     } = await c.req.json() as StatsData
 
     if (id.length !== 27
-        || revision.length > 50
+        || revision.length > 100
         || os.length > 100
-        || osname.length > 50   // Perl's $^O is a short string
+        || osname.length > 100
         || platform.length > 50
         || perl.length > 50
-        || skin.length > 25
+        || skin.length > 50
         || language.length > 5
-        || plugins.length > 200
+        || plugins.length > 250
         || (version && !versionCheck.test(version))
         || (players && !Number.isInteger(+players))
         || (tracks && !Number.isInteger(+tracks))
