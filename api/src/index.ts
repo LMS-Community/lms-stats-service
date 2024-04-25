@@ -1,4 +1,5 @@
-import { Hono, Context } from 'hono'
+import { Hono } from 'hono/tiny'
+import { Context } from 'hono'
 
 import {
     ValueCountsObject,
@@ -87,7 +88,7 @@ app.post('/api/instance/:id/', async (c: Context) => {
 
     if (id !== idHeader || !uaStringCheck.test(uaString) ) return validationError(c)
 
-    let {
+    const {
         version = '',
         revision = '',
         os = '',
