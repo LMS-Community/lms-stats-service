@@ -102,7 +102,6 @@ app.post('/api/instance/:id/', async (c: Context) => {
         tracks = 0
     } = await c.req.json() as StatsData
 
-    // TODO - better validation
     if (id.length !== 27
         || revision.length > 50
         || os.length > 100
