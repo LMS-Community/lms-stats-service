@@ -106,8 +106,8 @@ app.post('/api/instance/:id/', async (c: Context) => {
     if (id.length !== 27
         || revision.length > 50
         || os.length > 100
-        || osname.length > 20   // Perl's $^O is a short string
-        || platform.length > 20
+        || osname.length > 50   // Perl's $^O is a short string
+        || platform.length > 50
         || perl.length > 50
         || skin.length > 25
         || language.length > 5
@@ -115,7 +115,7 @@ app.post('/api/instance/:id/', async (c: Context) => {
         || (version && !versionCheck.test(version))
         || (players && !Number.isInteger(+players))
         || (tracks && !Number.isInteger(+tracks))
-        || (plugins.find(plugin => plugin.length > 25))
+        || (plugins.find(plugin => plugin.length > 50))
         || (playerTypes && Object.keys(playerTypes).length > 20)
     ) {
         return validationError(c)
