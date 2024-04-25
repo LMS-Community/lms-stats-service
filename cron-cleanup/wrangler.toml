@@ -1,0 +1,13 @@
+name = "lms-cleanup-scheduled"
+main = "src/cleanup.ts"
+compatibility_date = "2024-04-05"
+compatibility_flags = ["nodejs_compat"]
+
+[[ d1_databases ]]
+binding = "DB" # available in your Worker on env.DB
+database_name = ""
+#database_id = ""
+preview_database_id = ""
+
+[triggers]
+crons = ["45 8 * * *"]

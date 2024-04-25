@@ -6,10 +6,7 @@ interface HistoricSummary extends StatsSummary {
 }
 
 // How far back do we go to consider an installation active?
-const INTERVAL = 3600 * 24 * 30
-
-// Remove installations after a certain time of inactivity
-const RETENTION_TIME = 86400 * 90
+const INTERVAL = 86400 * 30
 
 async function updateSummary(env: any) {
     try {
@@ -23,10 +20,6 @@ async function updateSummary(env: any) {
             INSERT INTO summary ('date', data) VALUES(DATE(), json(?))
                 ON CONFLICT(date) DO UPDATE SET data=json(?);
         `).bind(dataString, dataString).run()
-
-        // expire stale data
-        await env.DB.prepare('DELETE FROM servers WHERE UNIXEPOCH(DATETIME()) - UNIXEPOCH(lastseen) > ?')
-            .bind(RETENTION_TIME).run()
     }
     catch(e) {
         console.error(e)
