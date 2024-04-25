@@ -1,4 +1,6 @@
 import { Hono, Context } from 'hono'
+import { z } from "zod";
+import { zValidator } from '@hono/zod-validator'
 
 import {
     ValueCountsObject,
@@ -33,9 +35,29 @@ interface StatsData {
     playerCount?: number;
     plugins: string[];
     skin: string;
-    language: string;
+    language?: string;
     tracks?: number;
 }
+
+const headerSchema = z.object({
+    'x-lms-id': z.string().length(27),
+    'user-agent': z.string().regex(uaStringCheck)
+})
+
+const inputSchema = z.object({
+    version: z.string().regex(versionCheck),
+    revision: z.string().max(50),
+    os: z.string().max(100),   // Perl's $^O is a short string
+    osname: z.string().max(20),
+    platform: z.string().max(20),
+    perl: z.string().max(50),
+    skin: z.string().max(25),
+    language: z.string().max(5).optional(),
+    plugins: z.array(z.string().max(25)).max(100).optional(),
+    players: z.coerce.number().int().optional(),
+    playerTypes: z.null().or(z.record(z.string().max(100), z.number())).optional(),
+    tracks: z.coerce.number().int().optional(),
+})
 
 app.get('/', async c => {
     return c.redirect('https://lyrion.org/analytics/', 301)
@@ -80,69 +102,60 @@ app.get('/api/stats/:dataset', async (c: Context) => {
     }
 })
 
-app.post('/api/instance/:id/', async (c: Context) => {
-    const { id } = c.req.param()
-    const idHeader = c.req.header('x-lms-id') as string
-    const uaString = c.req.header('User-Agent') as string
+app.post(
+    '/api/instance/:id/',
+    zValidator('param', z.object({ id: z.string().length(27) }), (result, c) => {
+        if (!result.success) return validationError(c, result.error)
+    }),
+    zValidator('header', headerSchema, (result, c) => {
+        if (!result.success) return validationError(c, result.error)
+    }),
+    zValidator('json', inputSchema, (result, c) => {
+        if (!result.success) return validationError(c, result.error)
+    }),
+    async (c: Context) => {
+        const { id } = c.req.param()
+        const idHeader = c.req.header('x-lms-id') as string
 
-    if (id !== idHeader || !uaStringCheck.test(uaString) ) return validationError(c)
+        if (id !== idHeader) return validationError(c, "ID mismatch")
 
-    let {
-        version = '',
-        revision = '',
-        os = '',
-        osname = '',
-        platform = '',
-        perl = '',
-        players = 0,
-        playerTypes,
-        plugins = [],
-        skin = '',
-        language = '',
-        tracks = 0
-    } = await c.req.json() as StatsData
+        let {
+            version = '',
+            revision = '',
+            os = '',
+            osname = '',
+            platform = '',
+            perl = '',
+            players = 0,
+            playerTypes,
+            plugins = [],
+            skin = '',
+            language = '',
+            tracks = 0
+        } = await c.req.json() as StatsData
 
-    // TODO - better validation
-    if (id.length !== 27
-        || revision.length > 50
-        || os.length > 100
-        || osname.length > 20   // Perl's $^O is a short string
-        || platform.length > 20
-        || perl.length > 50
-        || skin.length > 25
-        || language.length > 5
-        || plugins.length > 200
-        || (version && !versionCheck.test(version))
-        || (players && !Number.isInteger(+players))
-        || (tracks && !Number.isInteger(+tracks))
-        || (plugins.find(plugin => plugin.length > 25))
-        || (playerTypes && Object.keys(playerTypes).length > 20)
-    ) {
-        return validationError(c)
+        const country = c.req.raw?.cf?.country;
+        const data = stringifyDataObject({
+            os, osname, platform, version, revision, perl, players, playerTypes, plugins, country, skin, language, tracks
+        })
+
+        const { success } = await c.env.DB.prepare(`
+            INSERT INTO servers (id, created, lastseen, data) VALUES(?, DATETIME(), DATETIME(), json(?))
+                ON CONFLICT(id) DO UPDATE SET lastseen=DATETIME(), data=json(?);
+        `).bind(id, data, data).run()
+
+        if (success) {
+            c.status(201)
+            return c.text("")
+        } else {
+            c.status(500)
+            return c.text("Something went wrong")
+        }
     }
+)
 
-    const country = c.req.raw?.cf?.country;
-
-    const data = stringifyDataObject({
-        os, osname, platform, version, revision, perl, players, playerTypes, plugins, country, skin, language, tracks
-    })
-
-    const { success } = await c.env.DB.prepare(`
-        INSERT INTO servers (id, created, lastseen, data) VALUES(?, DATETIME(), DATETIME(), json(?))
-            ON CONFLICT(id) DO UPDATE SET lastseen=DATETIME(), data=json(?);
-    `).bind(id, data, data).run()
-
-    if (success) {
-        c.status(201)
-        return c.text("")
-    } else {
-        c.status(500)
-        return c.text("Something went wrong")
-    }
-})
-
-async function validationError(c: Context) {
-    console.error(await c.req.json())
+async function validationError(c: Context, error?: any) {
+    console.error(error)
     c.status(201)
     return c.text("");
 }
