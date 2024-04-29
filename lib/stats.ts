@@ -109,15 +109,13 @@ export async function getOS(db: any, secs: number = 0): Promise<ValueCountsObjec
     const { results: os } = await db.prepare(`
         SELECT COUNT(1) AS c, (os || " - " || platform) AS v
         FROM (
-            SELECT CASE WHEN osname LIKE '%windows%' AND osname LIKE '%64-bit%' THEN 'Windows (64-bit)'
-                ELSE
-                    CASE WHEN osname LIKE '%windows%' THEN 'Windows (32-bit)' ELSE
-                        CASE WHEN osname LIKE '%Debian%Docker%' THEN 'Debian (Docker)' ELSE
-                            CASE WHEN osname LIKE 'QLMS %' THEN REPLACE(REPLACE(osname, ' stretch', ''), ' (QNAP TurboStation)', '') ELSE
-                                CASE WHEN osname LIKE '%macos%' THEN 'macOS' ELSE osname END
-                            END
-                        END
-                    END
+            SELECT CASE
+                WHEN osname LIKE '%windows%' AND osname LIKE '%64-bit%' THEN 'Windows (64-bit)'
+                WHEN osname LIKE '%windows%' THEN 'Windows (32-bit)'
+                WHEN osname LIKE '%Debian%Docker%' THEN 'Debian (Docker)'
+                WHEN osname LIKE 'QLMS %' THEN REPLACE(REPLACE(osname, ' stretch', ''), ' (QNAP TurboStation)', '')
+                WHEN osname LIKE '%macos%' THEN 'macOS'
+                ELSE osname
             END AS os, REPLACE(platform, '-linux', '') AS platform
             FROM (
                 SELECT JSON_EXTRACT(data, '$.osname') AS osname, JSON_EXTRACT(data, '$.platform') AS platform
