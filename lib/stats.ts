@@ -113,7 +113,9 @@ export async function getOS(db: any, secs: number = 0): Promise<ValueCountsObjec
                 ELSE
                     CASE WHEN osname LIKE '%windows%' THEN 'Windows (32-bit)' ELSE
                         CASE WHEN osname LIKE '%Debian%Docker%' THEN 'Debian (Docker)' ELSE
-                            CASE WHEN osname LIKE '%macos%' THEN 'macOS' ELSE osname END
+                            CASE WHEN osname LIKE 'QLMS %' THEN REPLACE(REPLACE(osname, ' stretch', ''), ' (QNAP TurboStation)', '') ELSE
+                                CASE WHEN osname LIKE '%macos%' THEN 'macOS' ELSE osname END
+                            END
                         END
                     END
             END AS os, REPLACE(platform, '-linux', '') AS platform
