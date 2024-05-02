@@ -32,26 +32,18 @@ async function getStats (db: any, identifier: string, secs?: number) {
 export async function getTrackCountBins(db: any, secs: number = 0): Promise<ValueCountsObject[]> {
     const { results } = await db.prepare(`
         SELECT COUNT(1) AS c, v FROM (
-            SELECT CASE WHEN tc > 1000000 THEN 1000000 ELSE
-                CASE WHEN tc > 500000 THEN 500000 ELSE
-                    CASE WHEN tc > 100000 THEN 100000 ELSE
-                        CASE WHEN tc > 50000 THEN 50000 ELSE
-                            CASE WHEN tc > 20000 THEN 20000 ELSE
-                                CASE WHEN tc > 10000 THEN 10000 ELSE
-                                    CASE WHEN tc > 5000 THEN 5000 ELSE
-                                        CASE WHEN tc > 1000 THEN 1000 ELSE
-                                            CASE WHEN tc > 500 THEN 500 ELSE
-                                                CASE WHEN tc > 0 THEN 1 ELSE
-                                                    0
-                                                END
-                                            END
-                                        END
-                                    END
-                                END
-                            END
-                        END
-                    END
-                END
+            SELECT CASE
+                WHEN tc > 1000000 THEN 1000000
+                WHEN tc > 500000 THEN 500000
+                WHEN tc > 100000 THEN 100000
+                WHEN tc > 50000 THEN 50000
+                WHEN tc > 20000 THEN 20000
+                WHEN tc > 10000 THEN 10000
+                WHEN tc > 5000 THEN 5000
+                WHEN tc > 1000 THEN 1000
+                WHEN tc > 500 THEN 500
+                WHEN tc > 0 THEN 1
+                ELSE 0
             END AS v
             FROM (
                 SELECT JSON_EXTRACT(data, '$.tracks') AS tc
