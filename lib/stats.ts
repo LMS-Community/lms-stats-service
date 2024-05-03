@@ -17,12 +17,15 @@ function getTimeCondition(secs: number = 0): string {
     return (secs > 0) ? 'WHERE UNIXEPOCH(DATETIME()) - UNIXEPOCH(lastseen) < ' + secs.toString() : '';
 }
 
-async function getStats (db: any, identifier: string, secs?: number) {
+async function getStats (db: any, identifier: string, secs?: number, castNumbers?: boolean) {
+    let groupBy = `JSON_EXTRACT(data, '$.${identifier}')`
+    if (castNumbers) groupBy = `CAST (${groupBy} AS string)`
+
     const { results } = await db.prepare(`
         SELECT JSON_EXTRACT(data, '$.${identifier}') AS v, COUNT(1) AS c
         FROM servers
         ${ getTimeCondition(secs) }
-        GROUP BY CAST (JSON_EXTRACT(data, '$.${identifier}') AS string)
+        GROUP BY ${groupBy}
         ORDER BY c DESC;
     `).all()
 
@@ -67,7 +70,7 @@ export async function getCountries(db: any, secs: number = 0): Promise<ValueCoun
 }
 
 export async function getPlayers(db: any, secs: number = 0): Promise<ValueCountsObject[]> {
-    return getStats(db, 'players', secs)
+    return getStats(db, 'players', secs, true)
 }
 
 export async function getPlayerCount(db: any, secs: number = 0): Promise<number> {
@@ -130,9 +133,9 @@ export async function getPlugins(db: any, secs: number = 0): Promise<ValueCounts
             FROM servers, JSON_EACH(data, '$.plugins')
             ${ getTimeCondition(secs) }
             GROUP BY JSON_EACH.value
-            ORDER BY c DESC
         )
         WHERE c > 5
+        ORDER BY c DESC
     `).all()
 
     return plugins.map((item: ValueCountsObject) => { return { [item.v]: item.c }})
