@@ -13,6 +13,9 @@ export interface ValueCountsObject {
     c: number;
 }
 
+// How far back do we go to consider an installation active?
+export const ACTIVE_INTERVAL = 86400 * 30
+
 function getTimeCondition(secs: number = 0): string {
     return (secs > 0) ? 'WHERE UNIXEPOCH(DATETIME()) - UNIXEPOCH(lastseen) < ' + secs.toString() : '';
 }

@@ -12,11 +12,9 @@ import {
     getPlugins,
     getSummary,
     getTrackCountBins,
-    getVersions
+    getVersions,
+    ACTIVE_INTERVAL
 } from '../../lib/stats';
-
-// How far back do we go to consider an installation active?
-const INTERVAL = 86400 * 30
 
 const app = new Hono()
 const versionCheck = new RegExp(/^\d{1,2}\.\d{1,3}\.\d{1,3}$/)
@@ -44,7 +42,7 @@ app.get('/', async c => {
 
 app.get('/api/stats', async (c: Context) => {
     try {
-        return c.json(await getSummary(c.env.DB, INTERVAL))
+        return c.json(await getSummary(c.env.DB, ACTIVE_INTERVAL))
     }
     catch(e) {
         console.error(e)
@@ -82,6 +80,16 @@ app.get('/api/stats/:dataset', async (c: Context) => {
 })
 
 app.post('/api/instance/:id/', async (c: Context) => {
+    const ip = c.req.raw.headers.get("CF-Connecting-IP")
+    const { success: rateOk } = await c.env.STATS_UPDATE_LIMITER.limit({
+        key: ip
+    })
+
+    if (!rateOk) {
+        c.status(429)
+        return c.text(`429 Failure – rate limit exceeded, try again in a few minutes`)
+    }
+
     const { id } = c.req.param()
     const idHeader = c.req.header('x-lms-id') as string
     const uaString = c.req.header('User-Agent') as string
