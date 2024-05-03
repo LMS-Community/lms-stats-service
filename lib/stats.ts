@@ -22,7 +22,7 @@ async function getStats (db: any, identifier: string, secs?: number) {
         SELECT JSON_EXTRACT(data, '$.${identifier}') AS v, COUNT(1) AS c
         FROM servers
         ${ getTimeCondition(secs) }
-        GROUP BY JSON_EXTRACT(data, '$.${identifier}')
+        GROUP BY CAST (JSON_EXTRACT(data, '$.${identifier}') AS string)
         ORDER BY c DESC;
     `).all()
 
@@ -46,7 +46,7 @@ export async function getTrackCountBins(db: any, secs: number = 0): Promise<Valu
                 ELSE 0
             END AS v
             FROM (
-                SELECT JSON_EXTRACT(data, '$.tracks') AS tc
+                SELECT CAST(JSON_EXTRACT(data, '$.tracks') AS number) AS tc
                 FROM servers
                 ${ getTimeCondition(secs) }
             )
