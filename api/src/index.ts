@@ -62,7 +62,10 @@ app.get('/api/stats/:dataset', async (c: Context) => {
         players: getPlayers,
         playerTypes: getPlayerTypes,
         playerCount: getPlayerCount,
-        plugins: getPlugins,
+        plugins: (db, secs?: number) => {
+            // "fast" would look up from helper table, which is updated hourly only; set to false for most accurate results (if CPU time allows)
+            return getPlugins(db, secs, false /* fast */);
+        },
         trackCounts: getTrackCountBins,
         versions: getVersions
     };

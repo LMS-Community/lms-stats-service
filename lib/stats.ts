@@ -129,8 +129,18 @@ export async function getOS(db: any, secs: number = 0): Promise<ValueCountsObjec
     return os.map((item: ValueCountsObject) => { return { [item.v]: item.c } })
 }
 
-export async function getPlugins(db: any, secs: number = 0): Promise<ValueCountsObject[]> {
-    const { results: plugins } = await db.prepare(`
+export async function getPlugins(db: any, secs: number = 0, fast?: boolean): Promise<ValueCountsObject[]> {
+    const { results: plugins } = await db.prepare(fast
+    ? `
+        SELECT * FROM (
+            SELECT COUNT(1) AS c, plugin AS v
+            FROM plugins
+            GROUP BY plugin
+        )
+        WHERE c > 5
+        ORDER BY c DESC
+    `
+    : `
         SELECT * FROM (
             SELECT COUNT(1) AS c, JSON_EACH.value AS v
             FROM servers, JSON_EACH(data, '$.plugins')
@@ -142,6 +152,16 @@ export async function getPlugins(db: any, secs: number = 0): Promise<ValueCounts
     `).all()
 
     return plugins.map((item: ValueCountsObject) => { return { [item.v]: item.c }})
+}
+
+export async function extractPlugins(db: any, secs: number = 0): Promise<undefined> {
+    await db.prepare('DELETE FROM plugins').run()
+    await db.prepare(`
+        INSERT INTO plugins (plugin)
+            SELECT JSON_EACH.value AS v
+            FROM servers, JSON_EACH(servers.data, '$.plugins')
+            ${ getTimeCondition(secs) }
+    `).run()
 }
 
 export async function getHistory(db: any): Promise<Object[]> {
