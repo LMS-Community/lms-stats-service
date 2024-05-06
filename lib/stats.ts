@@ -132,11 +132,8 @@ export async function getOS(db: any, secs: number = 0): Promise<ValueCountsObjec
 export async function getPlugins(db: any, secs: number = 0, fast?: boolean): Promise<ValueCountsObject[]> {
     const { results: plugins } = await db.prepare(fast
     ? `
-        SELECT * FROM (
-            SELECT COUNT(1) AS c, plugin AS v
-            FROM plugins
-            GROUP BY plugin
-        )
+        SELECT plugin AS v, plugins.count AS c
+        FROM plugins
         WHERE c > 5
         ORDER BY c DESC
     `
@@ -157,10 +154,13 @@ export async function getPlugins(db: any, secs: number = 0, fast?: boolean): Pro
 export async function extractPlugins(db: any, secs: number = 0): Promise<undefined> {
     await db.prepare('DELETE FROM plugins').run()
     await db.prepare(`
-        INSERT INTO plugins (plugin)
-            SELECT JSON_EACH.value AS v
-            FROM servers, JSON_EACH(servers.data, '$.plugins')
-            ${ getTimeCondition(secs) }
+        INSERT INTO plugins (plugin, count)
+            SELECT plugin, COUNT(1) AS count FROM (
+                SELECT JSON_EACH.value AS plugin
+                FROM servers, JSON_EACH(servers.data, '$.plugins')
+                ${ getTimeCondition(secs) }
+            )
+            GROUP BY plugin
     `).run()
 }
 

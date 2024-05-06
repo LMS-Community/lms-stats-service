@@ -1,5 +1,5 @@
 CREATE TABLE plugins (
     id     INTEGER PRIMARY KEY AUTOINCREMENT,
-    plugin TEXT (20)
+    plugin TEXT (20),
+    count  INTEGER
 );
-CREATE INDEX idx_plugins ON plugins (plugin);
