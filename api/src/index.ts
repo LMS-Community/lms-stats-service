@@ -40,9 +40,9 @@ app.get('/', async c => {
     return c.redirect('https://lyrion.org/analytics/', 301)
 })
 
-app.get('/api/stats', async (c: Context) => {
+app.get('/api/stats', parseFilterFromQuery, async (c: Context) => {
     try {
-        return c.json(await getSummary(c.env.DB, ACTIVE_INTERVAL))
+        return c.json(await getSummary(c.env.DB, c.var.secs || ACTIVE_INTERVAL, c.var.condition))
     }
     catch(e) {
         console.error(e)
@@ -50,12 +50,12 @@ app.get('/api/stats', async (c: Context) => {
     }
 })
 
-app.get('/api/stats/:dataset', async (c: Context) => {
-    const { dataset } = c.req.param()
+app.get('/api/stats/:dataset', parseFilterFromQuery, async (c: Context) => {
+    const dataset = c.req.param('dataset')
 
     if (!dataset) return c.redirect('/api/stats', 301)
 
-    const methods: { [key: string]: (db: any, secs?: number) => Promise<ValueCountsObject[]|Object[]|number> } = {
+    const methods: { [key: string]: (db: any, secs?: number, condition?: string) => Promise<ValueCountsObject[]|Object[]|number> } = {
         countries: getCountries,
         history: getHistory,
         os: getOS,
@@ -64,7 +64,7 @@ app.get('/api/stats/:dataset', async (c: Context) => {
         playerCount: getPlayerCount,
         plugins: (db, secs?: number) => {
             // "fast" would look up from helper table, which is updated hourly only; set to false for most accurate results (if CPU time allows)
-            return getPlugins(db, secs, false /* fast */);
+            return getPlugins(db, secs, false /* fast */, c.var.condition);
         },
         trackCounts: getTrackCountBins,
         versions: getVersions
@@ -74,7 +74,7 @@ app.get('/api/stats/:dataset', async (c: Context) => {
     if (!method) return c.text('404 Not Found', 404)
 
     try {
-        return c.json(await method(c.env.DB))
+        return c.json(await method(c.env.DB, c.var.secs, c.var.condition))
     }
     catch(e) {
         console.error(e)
@@ -151,6 +151,21 @@ app.post('/api/instance/:id/', async (c: Context) => {
         return c.text("Something went wrong")
     }
 })
+
+async function parseFilterFromQuery(c: Context, next: Function) {
+    const days = parseInt(c.req.query('days') as string)
+
+    if (days && Number.isInteger(+days)) c.set('secs', days * 86400)
+
+    const os = c.req.query('os')
+    let condition: string = ''
+
+    if (os && os.match(/^[a-z0-9-_]+$/i)) condition = `json_extract(data, '$.os') = "${os}"`
+
+    c.set('condition', condition)
+
+    await next()
+}
 
 async function validationError(c: Context) {
     console.error(await c.req.json())

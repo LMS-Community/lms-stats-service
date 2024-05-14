@@ -16,18 +16,24 @@ export interface ValueCountsObject {
 // How far back do we go to consider an installation active?
 export const ACTIVE_INTERVAL = 86400 * 30
 
-function getTimeCondition(secs: number = 0): string {
-    return (secs > 0) ? 'WHERE UNIXEPOCH(DATETIME()) - UNIXEPOCH(lastseen) < ' + secs.toString() : '';
+function getConditions(secs: number = 0, otherCondition?: string): string {
+    let condition = (secs > 0) ? 'WHERE UNIXEPOCH(DATETIME()) - UNIXEPOCH(lastseen) < ' + secs.toString() : ''
+
+    if (otherCondition) {
+        condition = (condition ? `${condition} AND ` : 'WHERE ') + otherCondition
+    }
+
+    return condition
 }
 
-async function getStats (db: any, identifier: string, secs?: number, castNumbers?: boolean) {
+async function getStats (db: any, identifier: string, secs?: number, condition?: string, castNumbers?: boolean) {
     let groupBy = `JSON_EXTRACT(data, '$.${identifier}')`
     if (castNumbers) groupBy = `CAST (${groupBy} AS string)`
 
     const { results } = await db.prepare(`
         SELECT JSON_EXTRACT(data, '$.${identifier}') AS v, COUNT(1) AS c
         FROM servers
-        ${ getTimeCondition(secs) }
+        ${ getConditions(secs, condition) }
         GROUP BY ${groupBy}
         ORDER BY c DESC;
     `).all()
@@ -35,7 +41,7 @@ async function getStats (db: any, identifier: string, secs?: number, castNumbers
     return results.map((item: ValueCountsObject) => { return { [item.v]: item.c } })
 }
 
-export async function getTrackCountBins(db: any, secs: number = 0): Promise<ValueCountsObject[]> {
+export async function getTrackCountBins(db: any, secs: number = 0, cond?: string): Promise<ValueCountsObject[]> {
     const { results } = await db.prepare(`
         SELECT COUNT(1) AS c, v FROM (
             SELECT CASE
@@ -54,7 +60,7 @@ export async function getTrackCountBins(db: any, secs: number = 0): Promise<Valu
             FROM (
                 SELECT CAST(JSON_EXTRACT(data, '$.tracks') AS number) AS tc
                 FROM servers
-                ${ getTimeCondition(secs) }
+                ${ getConditions(secs, cond) }
             )
         )
         GROUP BY v
@@ -64,36 +70,36 @@ export async function getTrackCountBins(db: any, secs: number = 0): Promise<Valu
     return results.map((item: ValueCountsObject) => { return { [item.v]: item.c } })
 }
 
-export async function getVersions (db: any, secs: number = 0): Promise<ValueCountsObject[]> {
-    return getStats(db, 'version', secs)
+export async function getVersions (db: any, secs: number = 0, cond?: string): Promise<ValueCountsObject[]> {
+    return getStats(db, 'version', secs, cond)
 }
 
-export async function getCountries(db: any, secs: number = 0): Promise<ValueCountsObject[]> {
-    return getStats(db, 'country', secs)
+export async function getCountries(db: any, secs: number = 0, cond?: string): Promise<ValueCountsObject[]> {
+    return getStats(db, 'country', secs, cond)
 }
 
-export async function getPlayers(db: any, secs: number = 0): Promise<ValueCountsObject[]> {
-    return getStats(db, 'players', secs, true)
+export async function getPlayers(db: any, secs: number = 0, cond?: string): Promise<ValueCountsObject[]> {
+    return getStats(db, 'players', secs, cond, true)
 }
 
-export async function getPlayerCount(db: any, secs: number = 0): Promise<number> {
+export async function getPlayerCount(db: any, secs: number = 0, cond?: string): Promise<number> {
     const { results } = await db.prepare(`
         SELECT SUM(JSON_EXTRACT(data, '$.players')) AS p
         FROM servers
-        ${ getTimeCondition(secs) }
+        ${ getConditions(secs, cond) }
     `).all()
 
     return results[0].p
 }
 
 
-export async function getPlayerTypes(db: any, secs: number = 0): Promise<ValueCountsObject[]> {
+export async function getPlayerTypes(db: any, secs: number = 0, cond?: string): Promise<ValueCountsObject[]> {
     const { results: playerTypes } = await db.prepare(`
         SELECT model AS v, SUM(count) AS c
         FROM (
             SELECT key AS model, value AS count, type, path
             FROM servers, JSON_TREE(data, '$.playerTypes')
-            ${ getTimeCondition(secs) }
+            ${ getConditions(secs, cond) }
         )
         WHERE type = 'integer' AND path = '$.playerTypes'
         GROUP BY model
@@ -103,7 +109,7 @@ export async function getPlayerTypes(db: any, secs: number = 0): Promise<ValueCo
     return playerTypes.map((item: ValueCountsObject) => { return { [item.v]: item.c } })
 }
 
-export async function getOS(db: any, secs: number = 0): Promise<ValueCountsObject[]> {
+export async function getOS(db: any, secs: number = 0, cond?: string): Promise<ValueCountsObject[]> {
     const { results: os } = await db.prepare(`
         SELECT COUNT(1) AS c, (os || " - " || platform) AS v
         FROM (
@@ -118,18 +124,18 @@ export async function getOS(db: any, secs: number = 0): Promise<ValueCountsObjec
             FROM (
                 SELECT JSON_EXTRACT(data, '$.osname') AS osname, JSON_EXTRACT(data, '$.platform') AS platform
                 FROM servers
-                ${ getTimeCondition(secs) }
+                ${ getConditions(secs, cond) }
             )
         )
         WHERE os NOT NULL
         GROUP BY os, platform
         ORDER BY c DESC;
-    `).all();
+    `).all()
 
     return os.map((item: ValueCountsObject) => { return { [item.v]: item.c } })
 }
 
-export async function getPlugins(db: any, secs: number = 0, fast?: boolean): Promise<ValueCountsObject[]> {
+export async function getPlugins(db: any, secs: number = 0, fast?: boolean, cond?: string): Promise<ValueCountsObject[]> {
     const { results: plugins } = await db.prepare(fast
     ? `
         SELECT plugin AS v, plugins.count AS c
@@ -141,7 +147,7 @@ export async function getPlugins(db: any, secs: number = 0, fast?: boolean): Pro
         SELECT * FROM (
             SELECT COUNT(1) AS c, JSON_EACH.value AS v
             FROM servers, JSON_EACH(data, '$.plugins')
-            ${ getTimeCondition(secs) }
+            ${ getConditions(secs, cond) }
             GROUP BY JSON_EACH.value
         )
         WHERE c > 5
@@ -158,7 +164,7 @@ export async function extractPlugins(db: any, secs: number = 0): Promise<undefin
             SELECT plugin, COUNT(1) AS count FROM (
                 SELECT JSON_EACH.value AS plugin
                 FROM servers, JSON_EACH(servers.data, '$.plugins')
-                ${ getTimeCondition(secs) }
+                ${ getConditions(secs) }
             )
             GROUP BY plugin
     `).run()
@@ -178,13 +184,13 @@ export async function getHistory(db: any): Promise<Object[]> {
     return results
 }
 
-export async function getSummary(db: any, secs: number = 0): Promise<StatsSummary> {
+export async function getSummary(db: any, secs: number = 0, cond?: string): Promise<StatsSummary> {
     return {
-        versions: await getVersions(db, secs),
-        countries: await getCountries(db, secs),
-        connectedPlayers: await getPlayers(db, secs),
-        playerTypes: await getPlayerTypes(db, secs),
-        os: await getOS(db, secs),
-        tracks: await getTrackCountBins(db, secs)
+        versions: await getVersions(db, secs, cond),
+        countries: await getCountries(db, secs, cond),
+        connectedPlayers: await getPlayers(db, secs, cond),
+        playerTypes: await getPlayerTypes(db, secs, cond),
+        os: await getOS(db, secs, cond),
+        tracks: await getTrackCountBins(db, secs, cond)
     }
 }
