@@ -42,7 +42,7 @@ app.get('/', async c => {
 
 app.get('/api/stats', parseFilterFromQuery, async (c: Context) => {
     try {
-        return c.json(await getSummary(c.env.DB, c.var.secs || ACTIVE_INTERVAL, c.var.condition))
+        return c.json(await getSummary(c.env.DB, c.var.secs || ACTIVE_INTERVAL, c.var.keys, c.var.values))
     }
     catch(e) {
         console.error(e)
@@ -55,7 +55,7 @@ app.get('/api/stats/:dataset', parseFilterFromQuery, async (c: Context) => {
 
     if (!dataset) return c.redirect('/api/stats', 301)
 
-    const methods: { [key: string]: (db: any, secs?: number, condition?: string) => Promise<ValueCountsObject[]|Object[]|number> } = {
+    const methods: { [key: string]: (db: any, secs: number, keys: Array<string>, values: Array<string>) => Promise<ValueCountsObject[]|Object[]|number> } = {
         countries: getCountries,
         history: getHistory,
         os: getOS,
@@ -63,8 +63,7 @@ app.get('/api/stats/:dataset', parseFilterFromQuery, async (c: Context) => {
         playerTypes: getPlayerTypes,
         playerCount: getPlayerCount,
         plugins: (db, secs?: number) => {
-            // "fast" would look up from helper table, which is updated hourly only; set to false for most accurate results (if CPU time allows)
-            return getPlugins(db, secs, false /* fast */, c.var.condition);
+            return getPlugins(db, secs, false /* fast */, c.var.keys, c.var.values);
         },
         trackCounts: getTrackCountBins,
         versions: getVersions
@@ -74,7 +73,7 @@ app.get('/api/stats/:dataset', parseFilterFromQuery, async (c: Context) => {
     if (!method) return c.text('404 Not Found', 404)
 
     try {
-        return c.json(await method(c.env.DB, c.var.secs, c.var.condition))
+        return c.json(await method(c.env.DB, c.var.secs, c.var.keys, c.var.values))
     }
     catch(e) {
         console.error(e)
@@ -158,11 +157,16 @@ async function parseFilterFromQuery(c: Context, next: Function) {
     if (days && Number.isInteger(+days)) c.set('secs', days * 86400)
 
     const os = c.req.query('os')
-    let condition: string = ''
+    const keys: Array<string> = []
+    const values: Array<string> = []
 
-    if (os && os.match(/^[a-z0-9-_]+$/i)) condition = `json_extract(data, '$.os') = "${os}"`
+    if (os && os.match(/^[a-z0-9-_]+$/i)) {
+        keys.push('os')
+        values.push(os)
+    }
 
-    c.set('condition', condition)
+    c.set('keys', keys)
+    c.set('values', values)
 
     await next()
 }
