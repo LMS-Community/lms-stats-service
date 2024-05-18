@@ -15,6 +15,7 @@ export interface ValueCountsObject {
 
 // How far back do we go to consider an installation active?
 export const ACTIVE_INTERVAL = 86400 * 30
+const MAX_HISTORY_BINS = 50
 
 function getConditions(secs: number = 0, keys: Array<string> = []): string {
     let condition = (secs > 0)
@@ -153,6 +154,7 @@ export async function getOS(db: any, secs: number = 0, keys?: Array<string>, val
                 WHEN osname LIKE '%Debian%Docker%' THEN 'Debian (Docker)'
                 WHEN osname LIKE 'QLMS %' THEN REPLACE(REPLACE(osname, ' 9 stretch', ''), ' (QNAP TurboStation)', '')
                 WHEN osname LIKE '%macos%' THEN 'macOS'
+                WHEN osname LIKE '%os x 1%' THEN 'macOS'
                 ELSE osname
             END AS os, REPLACE(platform, '-linux', '') AS platform
             FROM (
@@ -213,14 +215,17 @@ export async function extractPlugins(db: any, secs: number = 0): Promise<undefin
 }
 
 export async function getHistory(db: any): Promise<Object[]> {
-    // TODO group into buckets/windows using window functions (if they exist in D1 - https://www.sqlite.org/windowfunctions.html)
     const { results } = await db.prepare(`
-        SELECT summary.date AS d,
+        SELECT MAX(d) AS d, o, v, p FROM (
+            SELECT NTILE(${MAX_HISTORY_BINS}) OVER date AS bucket,
+                date AS d,
             JSON_EXTRACT(data, '$.os') AS o,
             JSON_EXTRACT(data, '$.versions') AS v,
             JSON_EXTRACT(data, '$.players') AS p
         FROM summary
-        ORDER BY d ASC;
+            WINDOW date AS (ORDER BY date)
+        )
+        GROUP BY bucket
     `).all()
 
     return results
