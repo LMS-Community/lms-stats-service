@@ -224,7 +224,7 @@ export async function getSummary(db: any, secs: number = 0, keys?: Array<string>
         versions: await getVersions(db, secs, keys, values),
         countries: await getCountries(db, secs, keys, values),
         connectedPlayers: await getPlayers(db, secs, keys, values),
-        playerTypes: await getSpecificPlayerTypes(db, secs, keys, values),
+        playerTypes: await getPlayerTypes(db, secs, keys, values),
         os: await getOS(db, secs, keys, values),
         tracks: await getTrackCountBins(db, secs, keys, values)
     }
