@@ -112,6 +112,31 @@ export async function getPlayerTypes(db: any, secs: number = 0, keys?: Array<str
     return playerTypes.map((item: ValueCountsObject) => { return { [item.v]: item.c } })
 }
 
+// squeezelite can be many things - return the more specific modelName instead
+// this query is more complex and slower as the above, as it tries to merge information where needed
+export async function getSpecificPlayerTypes(db: any, secs: number = 0, keys?: Array<string>, values: Array<string> = []): Promise<ValueCountsObject[]> {
+    const { results: playerTypes } = await db.prepare(`
+        SELECT JSON_TREE.key AS v, SUM(JSON_TREE.value) AS c
+        FROM (
+            SELECT JSON_TREE.value AS value
+            FROM (
+                SELECT CASE
+                    WHEN data LIKE '%playerModels%' THEN JSON_OBJECT('playerTypes', JSON_EXTRACT(data, '$.playerModels'))
+                    ELSE JSON_OBJECT('playerTypes', JSON_EXTRACT(data, '$.playerTypes'))
+                END AS data
+                FROM servers
+                ${ getConditions(secs, keys) }
+            ), JSON_TREE(data)
+            WHERE NOT JSON_TREE.value IS NULL AND JSON_TREE.key = 'playerTypes'
+        ) v, JSON_TREE(v.value)
+        WHERE JSON_TREE.type = 'integer'
+        GROUP BY LOWER(JSON_TREE.key)
+        ORDER BY c DESC;
+    `).bind(secs, ...values).all()
+
+    return playerTypes.map((item: ValueCountsObject) => { return { [item.v]: item.c } })
+}
+
 export async function getOS(db: any, secs: number = 0, keys?: Array<string>, values: Array<string> = []): Promise<ValueCountsObject[]> {
     const { results: os } = await db.prepare(`
         SELECT COUNT(1) AS c, (os || " - " || platform) AS v

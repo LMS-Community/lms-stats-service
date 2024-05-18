@@ -29,6 +29,7 @@ interface StatsData {
     perl: string;
     players?: number;
     playerTypes?: object;
+    playerModels?: object;
     playerCount?: number;
     plugins: string[];
     skin: string;
@@ -107,6 +108,7 @@ app.post('/api/instance/:id/', async (c: Context) => {
         perl = '',
         players = 0,
         playerTypes,
+        playerModels,
         plugins = [],
         skin = '',
         language = '',
@@ -127,6 +129,7 @@ app.post('/api/instance/:id/', async (c: Context) => {
         || (tracks && !Number.isInteger(+tracks))
         || (plugins.find(plugin => plugin.length > 50))
         || (playerTypes && Object.keys(playerTypes).length > 20)
+        || (playerModels && Object.keys(playerModels).length > 50)
     ) {
         return validationError(c)
     }
@@ -134,7 +137,7 @@ app.post('/api/instance/:id/', async (c: Context) => {
     const country = c.req.raw?.cf?.country;
 
     const data = stringifyDataObject({
-        os, osname, platform, version, revision, perl, players, playerTypes, plugins, country, skin, language, tracks
+        os, osname, platform, version, revision, perl, players, playerTypes, playerModels, plugins, country, skin, language, tracks
     })
 
     const { success } = await c.env.DB.prepare(`
