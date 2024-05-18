@@ -156,14 +156,23 @@ async function parseFilterFromQuery(c: Context, next: Function) {
 
     if (days && Number.isInteger(+days)) c.set('secs', days * 86400)
 
-    const os = c.req.query('os')
     const keys: Array<string> = []
     const values: Array<string> = []
 
-    if (os && os.match(/^[a-z0-9-_]+$/i)) {
-        keys.push('os')
-        values.push(os)
+    const acceptedParams: { [key: string]: RegExp } = {
+        os: /^[a-z0-9-_]+$/i,
+        osname: /^[a-z0-9-_ ()]+$/i,
+        version: /^\d+\.\d+\.\d+$/,
+        country: /^[A-Z]{2}$/i
     }
+
+    Object.keys(acceptedParams).forEach(k => {
+        const v = c.req.query(k)
+        if (v && v.match(acceptedParams[k])) {
+            keys.push(k)
+            values.push(v)
+        }
+    })
 
     c.set('keys', keys)
     c.set('values', values)
