@@ -13,6 +13,38 @@ export interface ValueCountsObject {
     c: number;
 }
 
+export const playerTypesMap: { [k: string]: string} = {
+    baby: 'Squeezebox Radio',
+    boom: 'Squeezebox Boom',
+    controller: 'Squeezebox Controller',
+    daphile: 'Daphile',
+    euphony: 'Euphony',
+    fab4: 'Squeezebox Touch',
+    http: 'HTTP',
+    ipengipad: 'iPeng iPad',
+    ipengipod: 'iPeng iPhone',
+    'ipeng ipad': 'iPeng iPad',
+    'ipeng ipod': 'iPeng iPhone',
+    'ipeng iphone': 'iPeng iPhone',
+    m6encore: 'M6 Encore',
+    receiver: 'Squeezebox Receiver',
+    'ropieee [ropieeexl]': 'Ropieee',
+    slimlibrary: 'SlimLibrary',
+    slimp3: 'SliMP3',
+    softsqueeze: 'Softsqueeze',
+    'squeeze connect': 'Squeeze Connect',
+    squeezebox: 'Squeezebox 1',
+    squeezebox2: 'Squeezebox 2/3/Classic',
+    squeezebox3: 'Squeezebox 3',
+    squeezeesp32: 'SqueezeESP32',
+    squeezelite: 'Squeezelite',
+    squeezeplay: 'SqueezePlay',
+    squeezeplayer: 'SqueezePlayer',
+    squeezeslave: 'Squeezeslave',
+    transporter: 'Transporter'
+};
+
+
 // How far back do we go to consider an installation active?
 export const ACTIVE_INTERVAL = 86400 * 30
 const MAX_HISTORY_BINS = 50
@@ -119,9 +151,10 @@ export async function getPlayerTypes(db: any, secs: number = 0, keys?: Array<str
  * 1. get a new object with only one or the other - depending on whether `playerModels` exists
  * 2. expand data using `JSON_TREE`
  * 3. get only defined values
+ * 4. take the result set and apply additional player type mapping in JS
  * This is considerably faster than expanding all of the data object and filtering from there.
  */
-export async function getSpecificPlayerTypes(db: any, secs: number = 0, keys?: Array<string>, values: Array<string> = []): Promise<ValueCountsObject[]> {
+export async function getSpecificPlayerTypes(db: any, secs: number = 0, keys?: Array<string>, values: Array<string> = []): Promise<{ [k: string]: number}[]> {
     const { results: playerTypes } = await db.prepare(`
         SELECT JSON_TREE.key AS v, SUM(JSON_TREE.value) AS c
         FROM (
@@ -141,8 +174,21 @@ export async function getSpecificPlayerTypes(db: any, secs: number = 0, keys?: A
         ORDER BY c DESC;
     `).bind(secs, ...values).all()
 
-    return playerTypes.map((item: ValueCountsObject) => { return { [item.v]: item.c } })
+    // the database might return 'receiver' from playerTypes, and 'Squeezebox Receiver' from playerModels
+    // let's join them here by applying a mapping, and recount results by new type names
+    const regroupPlayerTypes = playerTypes.reduce((accumulator: { [k: string]: number }, item: ValueCountsObject) => {
+        const k = playerTypesMap[(item.v as string).toLowerCase()] || item.v
+        accumulator[k] = (accumulator[k] || 0) + item.c
+        return accumulator
+    }, {})
+
+    return Object.keys(regroupPlayerTypes).sort((a, b) => {
+        return regroupPlayerTypes[b] - regroupPlayerTypes[a]
+    }).map((k: string) => {
+        return { [k]: regroupPlayerTypes[k] }
+    })
 }
+
 
 export async function getOS(db: any, secs: number = 0, keys?: Array<string>, values: Array<string> = []): Promise<ValueCountsObject[]> {
     const { results: os } = await db.prepare(`
