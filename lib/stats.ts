@@ -111,8 +111,15 @@ export async function getPlayerTypes(db: any, secs: number = 0, keys?: Array<str
     return playerTypes.map((item: ValueCountsObject) => { return { [item.v]: item.c } })
 }
 
-// squeezelite can be many things - return the more specific modelName instead
-// this query is more complex and slower as the above, as it tries to merge information where needed
+/*
+ * squeezelite can be many things - return the more specific modelName instead
+ * I've tried to optimize this query in order to be able to combine `playerTypes`
+ * with `playerModels`:
+ * 1. get a new object with only one or the other - depending on whether `playerModels` exists
+ * 2. expand data using `JSON_TREE`
+ * 3. get only defined values
+ * This is considerably faster than expanding all of the data object and filtering from there.
+ */
 export async function getSpecificPlayerTypes(db: any, secs: number = 0, keys?: Array<string>, values: Array<string> = []): Promise<ValueCountsObject[]> {
     const { results: playerTypes } = await db.prepare(`
         SELECT JSON_TREE.key AS v, SUM(JSON_TREE.value) AS c
