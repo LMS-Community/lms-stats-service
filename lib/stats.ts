@@ -32,7 +32,6 @@ async function getStats (db: any, identifier: string, secs: number = 0, keys: Ar
     let groupBy = `JSON_EXTRACT(data, '$.${identifier}')`
     if (castNumbers) groupBy = `CAST (${groupBy} AS string)`
 
-    console.log(JSON.stringify({secs, keys, values}, null, 2));
     const { results } = await db.prepare(`
         SELECT JSON_EXTRACT(data, '$.${identifier}') AS v, COUNT(1) AS c
         FROM servers
@@ -225,7 +224,7 @@ export async function getSummary(db: any, secs: number = 0, keys?: Array<string>
         versions: await getVersions(db, secs, keys, values),
         countries: await getCountries(db, secs, keys, values),
         connectedPlayers: await getPlayers(db, secs, keys, values),
-        playerTypes: await getPlayerTypes(db, secs, keys, values),
+        playerTypes: await getSpecificPlayerTypes(db, secs, keys, values),
         os: await getOS(db, secs, keys, values),
         tracks: await getTrackCountBins(db, secs, keys, values)
     }
