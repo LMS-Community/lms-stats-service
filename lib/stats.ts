@@ -1,13 +1,3 @@
-export interface StatsSummary {
-    versions?: object[];
-    countries?: object[];
-    os?: object[];
-    connectedPlayers?: object[]
-    playerTypes?: object[];
-    plugins?: object[];
-    tracks?: object[];
-}
-
 export interface ValueCountsObject {
     v: string | number;
     c: number;
@@ -144,6 +134,22 @@ export async function getPlayerTypes(db: any, secs: number = 0, keys?: Array<str
     return playerTypes.map((item: ValueCountsObject) => { return { [item.v]: item.c } })
 }
 
+export async function getPlayerModels(db: any, secs: number = 0, keys?: Array<string>, values: Array<string> = []): Promise<ValueCountsObject[]> {
+    const { results: playerModels } = await db.prepare(`
+        SELECT model AS v, SUM(count) AS c
+        FROM (
+            SELECT key AS model, value AS count, type, path
+            FROM servers, JSON_TREE(data, '$.playerModels')
+            ${ getConditions(secs, keys) }
+        )
+        WHERE type = 'integer' AND path = '$.playerModels'
+        GROUP BY model
+        ORDER BY c DESC;
+    `).bind(secs, ...values).all()
+
+    return playerModels.map((item: ValueCountsObject) => { return { [item.v]: item.c } })
+}
+
 /*
  * squeezelite can be many things - return the more specific modelName instead
  * I've tried to optimize this query in order to be able to combine `playerTypes`
@@ -154,7 +160,7 @@ export async function getPlayerTypes(db: any, secs: number = 0, keys?: Array<str
  * 4. take the result set and apply additional player type mapping in JS
  * This is considerably faster than expanding all of the data object and filtering from there.
  */
-export async function getSpecificPlayerTypes(db: any, secs: number = 0, keys?: Array<string>, values: Array<string> = []): Promise<{ [k: string]: number}[]> {
+export async function getMergedPlayerTypes(db: any, secs: number = 0, keys?: Array<string>, values: Array<string> = []): Promise<{ [k: string]: number}[]> {
     const { results: playerTypes } = await db.prepare(`
         SELECT JSON_TREE.key AS v, SUM(JSON_TREE.value) AS c
         FROM (
@@ -265,25 +271,14 @@ export async function getHistory(db: any): Promise<Object[]> {
         SELECT MAX(d) AS d, o, v, p FROM (
             SELECT NTILE(${MAX_HISTORY_BINS}) OVER date AS bucket,
                 date AS d,
-            JSON_EXTRACT(data, '$.os') AS o,
-            JSON_EXTRACT(data, '$.versions') AS v,
-            JSON_EXTRACT(data, '$.players') AS p
-        FROM summary
+                JSON_EXTRACT(data, '$.os') AS o,
+                JSON_EXTRACT(data, '$.versions') AS v,
+                JSON_EXTRACT(data, '$.players') AS p
+            FROM summary
             WINDOW date AS (ORDER BY date)
         )
         GROUP BY bucket
     `).all()
 
     return results
-}
-
-export async function getSummary(db: any, secs: number = 0, keys?: Array<string>, values?: Array<string>): Promise<StatsSummary> {
-    return {
-        versions: await getVersions(db, secs, keys, values),
-        countries: await getCountries(db, secs, keys, values),
-        connectedPlayers: await getPlayers(db, secs, keys, values),
-        playerTypes: await getPlayerTypes(db, secs, keys, values),
-        os: await getOS(db, secs, keys, values),
-        tracks: await getTrackCountBins(db, secs, keys, values)
-    }
 }

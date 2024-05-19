@@ -7,10 +7,11 @@ import {
     getHistory,
     getOS,
     getPlayerCount,
+    getPlayerModels,
     getPlayerTypes,
+    getMergedPlayerTypes,
     getPlayers,
     getPlugins,
-    getSummary,
     getTrackCountBins,
     getVersions,
     ACTIVE_INTERVAL
@@ -43,7 +44,18 @@ app.get('/', async c => {
 
 app.get('/api/stats', parseFilterFromQuery, async (c: Context) => {
     try {
-        return c.json(await getSummary(c.env.DB, c.var.secs || ACTIVE_INTERVAL, c.var.keys, c.var.values))
+        const secs = c.var.secs || ACTIVE_INTERVAL
+        const keys = c.var.keys
+        const values = c.var.values
+
+        return c.json({
+            connectedPlayers: await getPlayers(c.env.DB, secs, keys, values),
+            countries: await getCountries(c.env.DB, secs, keys, values),
+            os: await getOS(c.env.DB, secs, keys, values),
+            playerTypes: await getMergedPlayerTypes(c.env.DB, secs, keys, values),
+            tracks: await getTrackCountBins(c.env.DB, secs, keys, values),
+            versions: await getVersions(c.env.DB, secs, keys, values)
+        })
     }
     catch(e) {
         console.error(e)
@@ -62,6 +74,8 @@ app.get('/api/stats/:dataset', parseFilterFromQuery, async (c: Context) => {
         os: getOS,
         players: getPlayers,
         playerTypes: getPlayerTypes,
+        playerModels: getPlayerModels,
+        mergedPlayerTypes: getMergedPlayerTypes,
         playerCount: getPlayerCount,
         plugins: (db, secs?: number) => {
             return getPlugins(db, secs, false /* fast */, c.var.keys, c.var.values);

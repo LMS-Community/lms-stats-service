@@ -1,15 +1,42 @@
 import type { Event, ExecutionContext } from "@cloudflare/workers-types/experimental"
-import { StatsSummary, getPlayerCount, getPlugins, getSummary, ACTIVE_INTERVAL } from '../../lib/stats'
+import {
+    getCountries,
+    getOS,
+    getPlayerCount,
+    getPlayers,
+    getPlayerTypes,
+    getPlayerModels,
+    getPlugins,
+    getTrackCountBins,
+    getVersions,
+    ACTIVE_INTERVAL
+} from '../../lib/stats'
 
-interface HistoricSummary extends StatsSummary {
-    players: number
+interface HistoricSummary  {
+    versions?: object[];
+    countries?: object[];
+    os?: object[];
+    connectedPlayers?: object[]
+    playerTypes?: object[];
+    playerModels?: object[];
+    plugins?: object[];
+    tracks?: object[];
+    players: number;
 }
 
 async function updateSummary(env: any) {
     try {
-        const summaryData = await getSummary(env.DB, ACTIVE_INTERVAL) as HistoricSummary
-        summaryData.plugins = await getPlugins(env.DB, ACTIVE_INTERVAL, true /* fast */)
-        summaryData.players = await getPlayerCount(env.DB, ACTIVE_INTERVAL)
+        const summaryData: HistoricSummary = {
+            connectedPlayers: await getPlayers(env.DB, ACTIVE_INTERVAL),
+            countries: await getCountries(env.DB, ACTIVE_INTERVAL),
+            os: await getOS(env.DB, ACTIVE_INTERVAL),
+            players: await getPlayerCount(env.DB, ACTIVE_INTERVAL),
+            playerTypes: await getPlayerTypes(env.DB, ACTIVE_INTERVAL),
+            playerModels: await getPlayerModels(env.DB, ACTIVE_INTERVAL),
+            plugins: await getPlugins(env.DB, ACTIVE_INTERVAL, true /* fast */),
+            tracks: await getTrackCountBins(env.DB, ACTIVE_INTERVAL),
+            versions: await getVersions(env.DB, ACTIVE_INTERVAL)
+        }
 
         const dataString = JSON.stringify(summaryData)
 
