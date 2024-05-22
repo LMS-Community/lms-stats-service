@@ -183,7 +183,7 @@ export async function getMergedPlayerTypes(db: any, secs: number = 0, keys?: Arr
     // the database might return 'receiver' from playerTypes, and 'Squeezebox Receiver' from playerModels
     // let's join them here by applying a mapping, and recount results by new type names
     const regroupPlayerTypes = playerTypes.reduce((accumulator: { [k: string]: number }, item: ValueCountsObject) => {
-        const k = playerTypesMap[(item.v as string).toLowerCase()] || item.v
+        const k = mapPlayerType(item.v as string)
         accumulator[k] = (accumulator[k] || 0) + item.c
         return accumulator
     }, {})
@@ -193,6 +193,15 @@ export async function getMergedPlayerTypes(db: any, secs: number = 0, keys?: Arr
     }).map((k: string) => {
         return { [k]: regroupPlayerTypes[k] }
     })
+}
+
+function mapPlayerType(player: string): string {
+    player = playerTypesMap[(player as string).toLowerCase()] || player
+
+    // this seems to be created dynamically, can't be mapped statically
+    if (player.match(/ropiee/i)) player = 'Ropieee'
+
+    return player
 }
 
 
