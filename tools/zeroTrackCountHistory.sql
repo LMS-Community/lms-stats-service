@@ -1,15 +1,15 @@
 SELECT date,
        t,
-       u,
-       (u * 100 / t) AS percentage
+       z,
+       (z * 100 / t) AS percentage
   FROM (
-           SELECT date,
-                  json_extract(data, '$.players') AS t,
-                  json_extract(json_tree.value, '$.unknown') AS u
+           SELECT DATE,
+                  json_tree.value AS z,
+                  SUM(json_tree.value) AS t
              FROM summary,
-                  json_tree(data, '$.playerTypes')
-            WHERE value LIKE '{"unknown":%'
-       )
- ORDER BY date;
-
-;
+                  json_tree(data, '$.tracks')
+            WHERE json_tree.type = 'integer'
+            GROUP BY date
+            ORDER BY date,
+                     key
+       );
