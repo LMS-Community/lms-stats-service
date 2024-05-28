@@ -1,7 +1,7 @@
 SELECT date,
        t,
        u,
-       (u * 100 / t) AS percentage
+       ROUND((u * 100 / CAST(t AS REAL)), 2) AS percentage
   FROM (
            SELECT date,
                   json_extract(data, '$.players') AS t,
@@ -11,5 +11,3 @@ SELECT date,
             WHERE value LIKE '{"unknown":%'
        )
  ORDER BY date;
-
-;

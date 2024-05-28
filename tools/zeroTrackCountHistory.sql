@@ -1,7 +1,7 @@
 SELECT date,
        t,
        z,
-       (z * 100 / t) AS percentage
+       ROUND((z * 100 / CAST(t AS REAL)), 2) AS percentage
   FROM (
            SELECT DATE,
                   json_tree.value AS z,
