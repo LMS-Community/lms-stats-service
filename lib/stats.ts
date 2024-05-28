@@ -25,7 +25,8 @@ export const playerTypesMap: { [k: string]: string} = {
     'squeeze connect': 'Squeeze Connect',
     squeezebox: 'Squeezebox 1',
     squeezebox2: 'Squeezebox 2/3/Classic',
-    squeezebox3: 'Squeezebox 3',
+    squeezebox3: 'Squeezebox 2/3/Classic',
+    'squeezebox classic': 'Squeezebox 2/3/Classic',
     squeezeesp32: 'SqueezeESP32',
     squeezelite: 'Squeezelite',
     squeezeplay: 'SqueezePlay',
@@ -199,7 +200,11 @@ function mapPlayerType(player: string): string {
     player = playerTypesMap[(player as string).toLowerCase()] || player
 
     // this seems to be created dynamically, can't be mapped statically
-    if (player.match(/ropiee/i)) player = 'Ropieee'
+    if (player.match(/ropi.*ee/i)) player = 'Ropieee'
+    else if (player.match(/^Aroio/)) player = 'AroioOS'
+    else if (player.match(/^Yulong/)) player = 'Yulong'
+    else if (player.match(/^Topping/)) player = 'Topping'
+    else if (player.match(/^MusicServer4|MS4H/i)) player = 'MusicServer4(Home|Loxone)'
 
     return player
 }
