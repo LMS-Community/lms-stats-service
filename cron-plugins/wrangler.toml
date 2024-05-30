@@ -10,4 +10,4 @@ database_name = ""
 preview_database_id = ""
 
 [triggers]
-crons = ["*/59 * * * *"]
+crons = ["32 7 * * *"]
