@@ -8,6 +8,11 @@ binding = "DB" # available in your Worker on env.DB
 database_name = "lms-stats"
 database_id = ""
 
+[[ kv_namespaces ]]
+binding = "QC"
+id = ""
+preview_id = ""
+
 # The rate limiting API is in open beta.
 [[unsafe.bindings]]
 name = "STATS_UPDATE_LIMITER"
