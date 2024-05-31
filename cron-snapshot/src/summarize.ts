@@ -33,7 +33,7 @@ async function updateSummary(env: any) {
             players: await getPlayerCount(env.DB, ACTIVE_INTERVAL),
             playerTypes: await getPlayerTypes(env.DB, ACTIVE_INTERVAL),
             playerModels: await getPlayerModels(env.DB, ACTIVE_INTERVAL),
-            plugins: await getPlugins(env.DB, ACTIVE_INTERVAL, true /* fast */),
+            plugins: await getPlugins(env.DB, env.QC, ACTIVE_INTERVAL, true /* fast */),
             tracks: await getTrackCountBins(env.DB, ACTIVE_INTERVAL),
             versions: await getVersions(env.DB, ACTIVE_INTERVAL)
         }

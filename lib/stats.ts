@@ -39,6 +39,7 @@ export const playerTypesMap: { [k: string]: string} = {
 // How far back do we go to consider an installation active?
 export const ACTIVE_INTERVAL = 86400 * 30
 const MAX_HISTORY_BINS = 50
+const PLUGINS_CACHE_TTL = 86400
 
 function getConditions(secs: number = 0, keys: Array<string> = []): string {
     let condition = (secs > 0)
@@ -238,18 +239,20 @@ export async function getOS(db: any, secs: number = 0, keys?: Array<string>, val
 }
 
 // "fast" would look up from helper table, which is updated hourly only; set to false for most accurate results (if CPU time allows)
-export async function getPlugins(db: any, secs: number = 0, fast: boolean = false, keys?: Array<string>, values: Array<string> = []): Promise<ValueCountsObject[]> {
-    let query;
-    if (fast) {
-        // fast doesn't have timestamps, so we can't filter by time
-        values = keys = []
-        query = `
-            SELECT plugin AS v, plugins.count AS c
-            FROM plugins
-            WHERE c > 5 AND -1 < ?
-            ORDER BY c DESC
-        `
-    } else {
+export async function getPlugins(db: any, queryCache: any, secs: number = 0, fast: boolean = true, keys?: Array<string>, values: Array<string> = []): Promise<ValueCountsObject[]> {
+    let query, response;
+
+    const cacheKey: string = keys?.sort().join(':') + '-' + values.sort().join(':')
+
+    try {
+        const cached = await queryCache.get(cacheKey)
+        response = JSON.parse(cached)
+    }
+    catch(e) {
+        console.warn(`failed to parse query cache: ${e}`)
+    }
+
+    if (!response) {
         query = `
             SELECT * FROM (
                 SELECT COUNT(1) AS c, JSON_EACH.value AS v
@@ -260,11 +263,14 @@ export async function getPlugins(db: any, secs: number = 0, fast: boolean = fals
             WHERE c > 5
             ORDER BY c DESC
         `
+        const { results: plugins } = await db.prepare(query).bind(secs, ...values).all()
+        response = plugins.map((item: ValueCountsObject) => { return { [item.v]: item.c }})
+
+        await queryCache.put(cacheKey, JSON.stringify(response), { expirationTtl: PLUGINS_CACHE_TTL })
     }
 
-    const { results: plugins } = await db.prepare(query).bind(secs, ...values).all()
+    return response
 
-    return plugins.map((item: ValueCountsObject) => { return { [item.v]: item.c }})
 }
 
 export async function extractPlugins(db: any, secs: number = 0): Promise<undefined> {

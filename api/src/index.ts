@@ -78,7 +78,7 @@ app.get('/api/stats/:dataset', parseFilterFromQuery, async (c: Context) => {
         mergedPlayerTypes: getMergedPlayerTypes,
         playerCount: getPlayerCount,
         plugins: (db, secs?: number) => {
-            return getPlugins(db, secs, !secs && !c.var.keys.length /* fast */, c.var.keys, c.var.values);
+            return getPlugins(db, c.env.QC, secs, !secs && !c.var.keys.length /* fast */, c.var.keys, c.var.values);
         },
         trackCounts: getTrackCountBins,
         versions: getVersions
