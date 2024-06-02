@@ -1,9 +1,15 @@
 import type { Event, ExecutionContext } from "@cloudflare/workers-types/experimental"
-import { extractPlugins, ACTIVE_INTERVAL } from '../../lib/stats'
+import {
+    StatsDb,
+    ACTIVE_INTERVAL
+} from '../../lib/stats'
 
 async function updatePlugins(env: any) {
+    const statsDb = new StatsDb(env.DB, env.QC)
+
     try {
-        await extractPlugins(env.DB, ACTIVE_INTERVAL)
+        // just get the plugins list and ignore the result - we only want to fill the cache
+        await statsDb.getPluginsC({ secs: ACTIVE_INTERVAL })
     }
     catch(e) {
         console.error(e)

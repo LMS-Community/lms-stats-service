@@ -1,41 +1,37 @@
 import type { Event, ExecutionContext } from "@cloudflare/workers-types/experimental"
 import {
-    getCountries,
-    getOS,
-    getPlayerCount,
-    getPlayers,
-    getPlayerTypes,
-    getPlayerModels,
-    getPlugins,
-    getTrackCountBins,
-    getVersions,
+    StatsDb,
+    ValueCountsObject,
     ACTIVE_INTERVAL
 } from '../../lib/stats'
 
 interface HistoricSummary  {
-    versions?: object[];
-    countries?: object[];
-    os?: object[];
-    connectedPlayers?: object[]
-    playerTypes?: object[];
-    playerModels?: object[];
-    plugins?: object[];
-    tracks?: object[];
+    versions?: ValueCountsObject[];
+    countries?: ValueCountsObject[];
+    os?: ValueCountsObject[];
+    connectedPlayers?: ValueCountsObject[]
+    playerTypes?: ValueCountsObject[];
+    playerModels?: ValueCountsObject[];
+    plugins?: ValueCountsObject[];
+    tracks?: ValueCountsObject[];
     players: number;
 }
 
 async function updateSummary(env: any) {
+    const statsDb = new StatsDb(env.DB, env.QC)
+    const args = { secs: ACTIVE_INTERVAL }
+
     try {
         const summaryData: HistoricSummary = {
-            connectedPlayers: await getPlayers(env.DB, ACTIVE_INTERVAL),
-            countries: await getCountries(env.DB, ACTIVE_INTERVAL),
-            os: await getOS(env.DB, ACTIVE_INTERVAL),
-            players: await getPlayerCount(env.DB, ACTIVE_INTERVAL),
-            playerTypes: await getPlayerTypes(env.DB, ACTIVE_INTERVAL),
-            playerModels: await getPlayerModels(env.DB, ACTIVE_INTERVAL),
-            plugins: await getPlugins(env.DB, env.QC, ACTIVE_INTERVAL, true /* fast */),
-            tracks: await getTrackCountBins(env.DB, ACTIVE_INTERVAL),
-            versions: await getVersions(env.DB, ACTIVE_INTERVAL)
+            connectedPlayers: await statsDb.getPlayersC(args),
+            countries: await statsDb.getCountriesC(args),
+            os: await statsDb.getOSC(args),
+            players: await statsDb.getPlayerCountC(args),
+            playerTypes: await statsDb.getPlayerTypesC(args),
+            playerModels: await statsDb.getPlayerModelsC(args),
+            plugins: await statsDb.getPluginsC(args),
+            tracks: await statsDb.getTrackCountBinsC(args),
+            versions: await statsDb.getVersionsC(args)
         }
 
         const dataString = JSON.stringify(summaryData)

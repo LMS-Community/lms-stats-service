@@ -9,5 +9,10 @@ database_name = ""
 #database_id = ""
 preview_database_id = ""
 
+[[ kv_namespaces ]]
+binding = "QC"
+id = ""
+preview_id = ""
+
 [triggers]
-crons = ["32 7 * * *"]
+crons = ["10 0 * * *"]

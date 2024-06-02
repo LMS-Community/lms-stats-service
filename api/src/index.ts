@@ -2,19 +2,11 @@ import { Hono } from 'hono/tiny'
 import { Context } from 'hono'
 
 import {
+    StatsDb,
+    QueryArgs,
     ValueCountsObject,
-    getCountries,
-    getHistory,
-    getOS,
-    getPlayerCount,
-    getPlayerModels,
-    getPlayerTypes,
-    getMergedPlayerTypes,
-    getPlayers,
-    getPlugins,
-    getTrackCountBins,
-    getVersions,
-    ACTIVE_INTERVAL
+    ACTIVE_INTERVAL,
+    queryIdentifier
 } from '../../lib/stats';
 
 const app = new Hono()
@@ -42,19 +34,24 @@ app.get('/', async c => {
     return c.redirect('https://lyrion.org/analytics/', 301)
 })
 
-app.get('/api/stats', parseFilterFromQuery, async (c: Context) => {
+app.get('/api/stats', parseFilterFromQuery, initStatsDb, async (c: Context) => {
+    const args = {
+        secs: c.var.secs || ACTIVE_INTERVAL,
+        keys: c.var.keys,
+        values: c.var.values
+    }
+
+    const statsDb = c.var.statsDb
+
     try {
-        const secs = c.var.secs || ACTIVE_INTERVAL
-        const keys = c.var.keys
-        const values = c.var.values
 
         return c.json({
-            connectedPlayers: await getPlayers(c.env.DB, secs, keys, values),
-            countries: await getCountries(c.env.DB, secs, keys, values),
-            os: await getOS(c.env.DB, secs, keys, values),
-            playerTypes: await getMergedPlayerTypes(c.env.DB, secs, keys, values),
-            tracks: await getTrackCountBins(c.env.DB, secs, keys, values),
-            versions: await getVersions(c.env.DB, secs, keys, values)
+            connectedPlayers: await statsDb.getPlayersC(args),
+            countries: await statsDb.getCountriesC(args),
+            os: await statsDb.getOSC(args),
+            playerTypes: await statsDb.getMergedPlayerTypesC(args),
+            tracks: await statsDb.getTrackCountBinsC(args),
+            versions: await statsDb.getVersionsC(args)
         })
     }
     catch(e) {
@@ -63,32 +60,33 @@ app.get('/api/stats', parseFilterFromQuery, async (c: Context) => {
     }
 })
 
-app.get('/api/stats/:dataset', parseFilterFromQuery, async (c: Context) => {
+app.get('/api/stats/:dataset', parseFilterFromQuery, initStatsDb, async (c: Context) => {
     const dataset = c.req.param('dataset')
 
     if (!dataset) return c.redirect('/api/stats', 301)
 
-    const methods: { [key: string]: (db: any, secs: number, keys: Array<string>, values: Array<string>) => Promise<ValueCountsObject[]|Object[]|number> } = {
-        countries: getCountries,
-        history: getHistory,
-        os: getOS,
-        players: getPlayers,
-        playerTypes: getPlayerTypes,
-        playerModels: getPlayerModels,
-        mergedPlayerTypes: getMergedPlayerTypes,
-        playerCount: getPlayerCount,
-        plugins: (db, secs?: number) => {
-            return getPlugins(db, c.env.QC, secs, !secs && !c.var.keys.length /* fast */, c.var.keys, c.var.values);
-        },
-        trackCounts: getTrackCountBins,
-        versions: getVersions
+    const statsDb = c.var.statsDb
+
+    const methods: { [key: string]: (args: QueryArgs) => Promise<ValueCountsObject[]|Object[]|number> } = {
+        [queryIdentifier.countries]: statsDb.getCountriesC,
+        [queryIdentifier.history]: statsDb.getHistoryC,
+        [queryIdentifier.mergedPlayerTypes]: statsDb.getMergedPlayerTypesC,
+        [queryIdentifier.os]: statsDb.getOSC,
+        [queryIdentifier.players]: statsDb.getPlayersC,
+        [queryIdentifier.playerCount]: statsDb.getPlayerCountC,
+        [queryIdentifier.playerModels]: statsDb.getPlayerModelsC,
+        [queryIdentifier.playerTypes]: statsDb.getPlayerTypesC,
+        [queryIdentifier.plugins]: statsDb.getPluginsC,
+        [queryIdentifier.trackCounts]: statsDb.getTrackCountBinsC,
+        [queryIdentifier.versions]: statsDb.getVersionsC
     };
 
     const method = methods[dataset]
+
     if (!method) return c.text('404 Not Found', 404)
 
     try {
-        return c.json(await method(c.env.DB, c.var.secs, c.var.keys, c.var.values))
+        return c.json(await method.call(statsDb, { identifier: dataset, secs: c.var.secs, keys: c.var.keys, values: c.var.values }))
     }
     catch(e) {
         console.error(e)
@@ -197,6 +195,11 @@ async function parseFilterFromQuery(c: Context, next: Function) {
     await next()
 }
 
+async function initStatsDb(c: Context, next: Function) {
+    c.set('statsDb', new StatsDb(c.env.DB, c.env.QC))
+    await next()
+}
+
 async function validationError(c: Context) {
     console.error(await c.req.json())
     c.status(201)
@@ -204,6 +207,7 @@ async function validationError(c: Context) {
 }
 
 function stringifyDataObject(data: object) {
+    // remove empty values
     Object.keys(data).forEach((key: string) => {
         const value = data[key as keyof typeof data]
         if (value === undefined || value === null || (value as string | number).toString().length === 0) {

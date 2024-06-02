@@ -8,5 +8,10 @@ binding = "DB" # available in your Worker on env.DB
 database_name = ""
 database_id = ""
 
+[[ kv_namespaces ]]
+binding = "QC"
+id = ""
+preview_id = ""
+
 [triggers]
 crons = ["14 0 * * *"]
