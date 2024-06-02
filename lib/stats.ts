@@ -38,7 +38,7 @@ export const playerTypesMap: { [k: string]: string} = {
 
 // How far back do we go to consider an installation active?
 export const ACTIVE_INTERVAL = 86400 * 30
-const MAX_HISTORY_BINS = 50
+const MAX_HISTORY_BINS = 90
 const PLUGINS_CACHE_TTL = 86400
 
 function getConditions(secs: number = 0, keys: Array<string> = []): string {
@@ -242,7 +242,12 @@ export async function getOS(db: any, secs: number = 0, keys?: Array<string>, val
 export async function getPlugins(db: any, queryCache: any, secs: number = 0, fast: boolean = true, keys?: Array<string>, values: Array<string> = []): Promise<ValueCountsObject[]> {
     let query, response;
 
-    const cacheKey: string = keys?.sort().join(':') + '-' + values.sort().join(':')
+    const cacheKey: string = [
+        'plugins',
+        secs,
+        keys?.sort().join(':'),
+        values.sort().join(':')
+    ].join('-')
 
     try {
         const cached = await queryCache.get(cacheKey)
