@@ -77,6 +77,7 @@ app.get('/api/stats/:dataset', parseFilterFromQuery, initStatsDb, async (c: Cont
         [queryIdentifier.playerModels]: statsDb.getPlayerModelsC,
         [queryIdentifier.playerTypes]: statsDb.getPlayerTypesC,
         [queryIdentifier.plugins]: statsDb.getPluginsC,
+        [queryIdentifier.servers]: statsDb.getServerCountC,
         [queryIdentifier.trackCounts]: statsDb.getTrackCountBinsC,
         [queryIdentifier.versions]: statsDb.getVersionsC
     };

@@ -54,6 +54,7 @@ export const queryIdentifier = {
     playerModels: 'playerModels',
     playerTypes: 'playerTypes',
     plugins: 'plugins',
+    servers: 'serverCount',
     trackCounts: 'trackCounts',
     versions: 'versions'
 }
@@ -116,6 +117,22 @@ export class StatsDb {
         `).bind(secs, ...values).all()
 
         return this.cacheResults(results.map((item: ValueCountsObject) => { return { [item.v]: item.c } }), args)
+    }
+
+    async getServerCountC(args: QueryArgs): Promise<number> {
+        return await this.withCache(this.getServerCount, { identifier: queryIdentifier.servers, ...args })
+    }
+
+    async getServerCount(args: QueryArgs): Promise<number> {
+        const { secs = 0, keys = [], values = [] } = args
+
+        const { results } = await this.db.prepare(`
+            SELECT COUNT(1) AS c
+            FROM servers
+            ${ this.getConditions(secs, keys) }
+        `).bind(secs, ...values).all()
+
+        return await this.cacheResults(results[0].c, { identifier: queryIdentifier.servers, ...args })
     }
 
     async getTrackCountBinsC(args: QueryArgs) {
