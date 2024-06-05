@@ -63,7 +63,7 @@ export const queryIdentifier = {
 export const ACTIVE_INTERVAL = 86400 * 30
 const MAX_HISTORY_BINS = 90
 const DEFAULT_CACHE_TTL = 7200
-const PLUGINS_CACHE_TTL = 23.5 * 3600   // not quite a day, to make sure we are fresh when running the daily snapshot
+const PLUGINS_CACHE_TTL = 20 * 3600
 
 export class StatsDb {
     db: any;
