@@ -318,6 +318,7 @@ export class StatsDb {
         else if (player.match(/^Yulong/)) player = 'Yulong'
         else if (player.match(/^Topping/)) player = 'Topping'
         else if (player.match(/^MusicServer4|MS4H/i)) player = 'MusicServer4(Home|Loxone)'
+        else if (player.match(/RHEOS:/)) player = 'Denon RHEOS'
 
         return player
     }

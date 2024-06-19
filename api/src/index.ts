@@ -202,7 +202,7 @@ async function initStatsDb(c: Context, next: Function) {
 }
 
 async function validationError(c: Context) {
-    console.error(await c.req.json())
+    console.error("Validation error", await c.req.json())
     c.status(201)
     return c.text("");
 }
