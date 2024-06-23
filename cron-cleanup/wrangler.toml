@@ -5,9 +5,9 @@ compatibility_flags = ["nodejs_compat"]
 
 [[ d1_databases ]]
 binding = "DB" # available in your Worker on env.DB
-database_name = ""
-#database_id = ""
-preview_database_id = ""
+database_name = "lms-stats"
+database_id = "d1474a3c-42cd-4590-bd48-cdd77c7d568e"
+preview_database_id = "ce4aa698-5daa-4144-905b-5b5b025ef16e"
 
 [triggers]
 crons = ["45 8 * * *"]

@@ -5,13 +5,14 @@ compatibility_flags = ["nodejs_compat"]
 
 [[ d1_databases ]]
 binding = "DB" # available in your Worker on env.DB
-database_name = ""
-database_id = ""
+database_name = "lms-stats"
+database_id = "d1474a3c-42cd-4590-bd48-cdd77c7d568e"
+preview_database_id = "ce4aa698-5daa-4144-905b-5b5b025ef16e"
 
 [[ kv_namespaces ]]
 binding = "QC"
-id = ""
-preview_id = ""
+id = "13e6c04191f1412dbbc31f149426f0e9"
+preview_id = "2acedb221c054429b97ab91c1478e3cc"
 
 [triggers]
 crons = ["14 0 * * *"]
