@@ -70,6 +70,7 @@ app.get('/api/stats/:dataset', parseFilterFromQuery, initStatsDb, async (c: Cont
     const methods: { [key: string]: (args: QueryArgs) => Promise<ValueCountsObject[]|Object[]|number> } = {
         [queryIdentifier.countries]: statsDb.getCountriesC,
         [queryIdentifier.history]: statsDb.getHistoryC,
+        [queryIdentifier.language]: statsDb.getLanguagesC,
         [queryIdentifier.mergedPlayerTypes]: statsDb.getMergedPlayerTypesC,
         [queryIdentifier.os]: statsDb.getOSC,
         [queryIdentifier.players]: statsDb.getPlayersC,

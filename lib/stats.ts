@@ -5,6 +5,7 @@ export interface QueryArgs {
     values?: Array<string>;
     cacheKey?: string;
     cacheTtl?: number;
+    notNull?: boolean;
 }
 
 export interface ValueCountsObject {
@@ -47,6 +48,7 @@ export const playerTypesMap: { [k: string]: string} = {
 export const queryIdentifier = {
     countries: 'countries',
     history: 'history',
+    language: 'language',
     mergedPlayerTypes: 'mergedPlayerTypes',
     os: 'os',
     players: 'players',
@@ -74,13 +76,17 @@ export class StatsDb {
         this.qc = queryCache
     }
 
-    private getConditions(secs: number = 0, keys: Array<string> = []): string {
+    private getConditions(secs: number = 0, keys: Array<string> = [], notNull?: string): string {
         let condition = (secs > 0)
             ? 'WHERE UNIXEPOCH(DATETIME()) - UNIXEPOCH(lastseen) < ?'
             : 'WHERE 1 > ?'
 
         for (let i = 0; i < keys.length; i++) {
             condition += ` AND JSON_EXTRACT(data, '$.${keys[i]}') = ?`
+        }
+
+        if (notNull) {
+            condition += ` AND JSON_EXTRACT(data, '$.${notNull}') IS NOT NULL`
         }
 
         return condition
@@ -103,7 +109,7 @@ export class StatsDb {
     }
 
     private async getStats(args: QueryArgs, groupIdentifier: string, castNumbers?: boolean): Promise<ValueCountsObject[]> {
-        const { secs = 0, keys = [], values = [] } = args
+        const { secs = 0, keys = [], values = [], notNull = false } = args
 
         let groupBy = `JSON_EXTRACT(data, '$.${groupIdentifier}')`
         if (castNumbers) groupBy = `CAST (${groupBy} AS string)`
@@ -111,7 +117,7 @@ export class StatsDb {
         const { results } = await this.db.prepare(`
             SELECT JSON_EXTRACT(data, '$.${groupIdentifier}') AS v, COUNT(1) AS c
             FROM servers
-            ${ this.getConditions(secs, keys) }
+            ${ this.getConditions(secs, keys, notNull ? groupIdentifier : undefined) }
             GROUP BY ${groupBy}
             ORDER BY c DESC;
         `).bind(secs, ...values).all()
@@ -176,6 +182,14 @@ export class StatsDb {
 
     async getVersions(args: QueryArgs): Promise<ValueCountsObject[]> {
         return this.getStats({ identifier: queryIdentifier.versions, ...args }, 'version')
+    }
+
+    async getLanguagesC(args: QueryArgs): Promise<ValueCountsObject[]> {
+        return await this.withCache(this.getLanguages, { identifier: queryIdentifier.language, ...args })
+    }
+
+    async getLanguages(args: QueryArgs): Promise<ValueCountsObject[]> {
+        return this.getStats({ identifier: queryIdentifier.language, ...args, notNull: true }, 'language')
     }
 
     async getCountriesC(args: QueryArgs): Promise<ValueCountsObject[]> {

@@ -8,6 +8,7 @@ import {
 interface HistoricSummary  {
     versions?: ValueCountsObject[];
     countries?: ValueCountsObject[];
+    languages?: ValueCountsObject[];
     os?: ValueCountsObject[];
     connectedPlayers?: ValueCountsObject[]
     playerTypes?: ValueCountsObject[];
@@ -25,6 +26,7 @@ async function updateSummary(env: any) {
         const summaryData: HistoricSummary = {
             connectedPlayers: await statsDb.getPlayersC(args),
             countries: await statsDb.getCountriesC(args),
+            languages: await statsDb.getLanguagesC(args),
             os: await statsDb.getOSC(args),
             players: await statsDb.getPlayerCountC(args),
             playerTypes: await statsDb.getPlayerTypesC(args),
