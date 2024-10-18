@@ -51,6 +51,7 @@ export const queryIdentifier = {
     language: 'language',
     mergedPlayerTypes: 'mergedPlayerTypes',
     os: 'os',
+    perl: 'perl',
     players: 'players',
     playerCount: 'playerCount',
     playerModels: 'playerModels',
@@ -182,6 +183,27 @@ export class StatsDb {
 
     async getVersions(args: QueryArgs): Promise<ValueCountsObject[]> {
         return this.getStats({ identifier: queryIdentifier.versions, ...args }, 'version')
+    }
+
+    async getPerlVersionsC(args: QueryArgs): Promise<ValueCountsObject[]> {
+        return await this.withCache(this.getPerlVersions, { identifier: queryIdentifier.perl, ...args })
+    }
+
+    // we can't use getStats here, as we need to extract only the major revision of Perl
+    async getPerlVersions(args: QueryArgs): Promise<ValueCountsObject[]> {
+        const { secs = 0, keys = [], values = [], notNull = false } = args
+
+        let groupBy = `SUBSTR(JSON_EXTRACT(data, '$.perl'), 0, 5)`
+
+        const { results } = await this.db.prepare(`
+            SELECT ${groupBy} AS v, COUNT(1) AS c
+            FROM servers
+            ${ this.getConditions(secs, keys) }
+            GROUP BY ${groupBy}
+            ORDER BY c DESC;
+        `).bind(secs, ...values).all()
+
+        return this.cacheResults(results.map((item: ValueCountsObject) => { return { [item.v]: item.c } }), args)
     }
 
     async getLanguagesC(args: QueryArgs): Promise<ValueCountsObject[]> {

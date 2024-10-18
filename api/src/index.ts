@@ -73,6 +73,7 @@ app.get('/api/stats/:dataset', parseFilterFromQuery, initStatsDb, async (c: Cont
         [queryIdentifier.language]: statsDb.getLanguagesC,
         [queryIdentifier.mergedPlayerTypes]: statsDb.getMergedPlayerTypesC,
         [queryIdentifier.os]: statsDb.getOSC,
+        [queryIdentifier.perl]: statsDb.getPerlVersionsC,
         [queryIdentifier.players]: statsDb.getPlayersC,
         [queryIdentifier.playerCount]: statsDb.getPlayerCountC,
         [queryIdentifier.playerModels]: statsDb.getPlayerModelsC,
