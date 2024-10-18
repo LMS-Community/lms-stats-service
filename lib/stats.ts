@@ -355,6 +355,10 @@ export class StatsDb {
         else if (player.match(/^Topping/)) player = 'Topping'
         else if (player.match(/^MusicServer4|MS4H/i)) player = 'MusicServer4(Home|Loxone)'
         else if (player.match(/RHEOS:/)) player = 'Denon RHEOS'
+        else if (player.match(/^Pure_/i)) player = 'Pure'
+        else if (player.match(/^OLADRA/)) player = 'OLADRA'
+        else if (player.match(/^Antipodes/i)) player = 'Antipodes'
+        else if (player == '') player = 'Unknown'
 
         return player
     }
@@ -376,6 +380,8 @@ export class StatsDb {
                     WHEN osname LIKE 'QLMS %' THEN REPLACE(REPLACE(osname, ' 9 stretch', ''), ' (QNAP TurboStation)', '')
                     WHEN osname LIKE '%macos%' THEN 'macOS'
                     WHEN osname LIKE '%os x 1%' THEN 'macOS'
+                    WHEN osname LIKE '%HALLAUDIO%' THEN 'HALLAUDIO'
+                    WHEN osname LIKE '%polyOS%' THEN 'polyOS'
                     ELSE osname
                 END AS os, REPLACE(platform, '-linux', '') AS platform
                 FROM (
