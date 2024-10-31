@@ -11,7 +11,7 @@ import {
 
 const app = new Hono()
 const versionCheck = new RegExp(/^\d{1,2}\.\d{1,3}\.\d{1,3}$/)
-const uaStringCheck = new RegExp(/^iTunes.*L(?:yrion|ogitech) M(?:usic|edia) Server/)
+const uaStringCheck = new RegExp(/Squeezebox.*L(?:yrion|ogitech) M(?:usic|edia) Server/)
 
 interface StatsData {
     os: string;
@@ -112,7 +112,8 @@ app.post('/api/instance/:id/', async (c: Context) => {
     const idHeader = c.req.header('x-lms-id') as string
     const uaString = c.req.header('User-Agent') as string
 
-    if (id !== idHeader || !uaStringCheck.test(uaString) ) return validationError(c)
+    if (id !== idHeader) return validationError(c, `${id} !== ${idHeader}`)
+    if (!uaStringCheck.test(uaString) ) return validationError(c, uaString)
 
     const {
         version = '',
@@ -146,19 +147,32 @@ app.post('/api/instance/:id/', async (c: Context) => {
         || (playerTypes && Object.keys(playerTypes).length > 20)
         || (playerModels && Object.keys(playerModels).length > 50)
     ) {
-        return validationError(c)
+        return validationError(c, 'Invalid data')
     }
 
     const country = c.req.raw?.cf?.country;
 
-    const data = stringifyDataObject({
+    const data = {
         os, osname, platform, version, revision, perl, players, playerTypes, playerModels, plugins, country, skin, language, tracks
-    })
+    }
+
+    // don't downgrade an installation to zero players - use previous value instead, if available
+    if (players == 0) {
+        const playerCount = await c.env.DB.prepare(`
+            SELECT JSON_EXTRACT(data, '$.players') AS p
+            FROM servers
+            WHERE id = ?
+        `).bind(id).first('p')
+
+        data.players = parseInt(playerCount || 0)
+    }
+
+    const dataJSON = stringifyDataObject(data)
 
     const { success } = await c.env.DB.prepare(`
         INSERT INTO servers (id, created, lastseen, data) VALUES(?, DATETIME(), DATETIME(), json(?))
             ON CONFLICT(id) DO UPDATE SET lastseen=DATETIME(), data=json(?);
-    `).bind(id, data, data).run()
+    `).bind(id, dataJSON, dataJSON).run()
 
     if (success) {
         c.status(201)
@@ -203,8 +217,8 @@ async function initStatsDb(c: Context, next: Function) {
     await next()
 }
 
-async function validationError(c: Context) {
-    console.error("Validation error", await c.req.json())
+async function validationError(c: Context, message?: string) {
+    console.error(`Validation error (${message})`, await c.req.json())
     c.status(201)
     return c.text("");
 }
