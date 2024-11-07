@@ -112,6 +112,7 @@ app.post('/api/instance/:id/', async (c: Context) => {
     const idHeader = c.req.header('x-lms-id') as string
     const uaString = c.req.header('User-Agent') as string
 
+    if (!id) return validationError(c, 'Missing ID')
     if (id !== idHeader) return validationError(c, `${id} !== ${idHeader}`)
     if (!uaStringCheck.test(uaString) ) return validationError(c, uaString)
 
@@ -131,23 +132,41 @@ app.post('/api/instance/:id/', async (c: Context) => {
         tracks = 0
     } = await c.req.json() as StatsData
 
-    if (id.length !== 27
-        || revision.length > 100
-        || os.length > 100
-        || osname.length > 100
-        || platform.length > 50
-        || perl.length > 50
-        || skin.length > 50
-        || language.length > 5
-        || plugins.length > 250
-        || (version && !versionCheck.test(version))
-        || (players && !Number.isInteger(+players))
-        || (tracks && !Number.isInteger(+tracks))
-        || (plugins.find(plugin => plugin.length > 50))
-        || (playerTypes && Object.keys(playerTypes).length > 20)
-        || (playerModels && Object.keys(playerModels).length > 50)
-    ) {
-        return validationError(c, 'Invalid data')
+    try {
+        if (id.length !== 27
+            || (revision && revision.length > 100)
+            || (os && os.length > 100)
+            || (osname && osname.length > 100)
+            || (platform && platform.length > 50)
+            || (perl && perl.length > 50)
+            || (skin && skin.length > 50)
+            || (language && language.length > 5)
+            || (plugins && plugins.length > 250)
+            || (version && !versionCheck.test(version))
+            || (players && !Number.isInteger(+players))
+            || (tracks && !Number.isInteger(+tracks))
+            || (plugins.find(plugin => plugin.length > 50))
+            || (playerTypes && Object.keys(playerTypes).length > 20)
+            || (playerModels && Object.keys(playerModels).length > 50)
+        ) {
+            return validationError(c, `Invalid data`)
+        }
+    }
+    catch(e: any) {
+        try { const _x = id.length } catch(e) { console.error('id') }
+        try { const _x = revision.length } catch(e) { console.error('revision') }
+        try { const _x = os.length } catch(e) { console.error('os') }
+        try { const _x = osname.length } catch(e) { console.error('osname') }
+        try { const _x = platform.length } catch(e) { console.error('platform') }
+        try { const _x = perl.length } catch(e) { console.error('perl') }
+        try { const _x = skin.length } catch(e) { console.error('skin') }
+        try { const _x = language.length } catch(e) { console.error('language') }
+        try { const _x = plugins.length } catch(e) { console.error('plugins') }
+        try { const _x = plugins && plugins.find(plugin => plugin.length > 50) } catch(e) { console.error('plugins2') }
+        try { const _x = version.length } catch(e) { console.error('version') }
+        try { const _x = playerTypes && Object.keys(playerTypes).length } catch(e) { console.error('playerTypes') }
+        try { const _x = playerModels && Object.keys(playerModels).length } catch(e) { console.error('playerModels') }
+        return validationError(c, `Validation exception: ${e.message}`)
     }
 
     const country = c.req.raw?.cf?.country;
@@ -167,7 +186,14 @@ app.post('/api/instance/:id/', async (c: Context) => {
         data.players = parseInt(playerCount || 0)
     }
 
-    const dataJSON = stringifyDataObject(data)
+    let dataJSON;
+
+    try {
+        dataJSON = stringifyDataObject(data)
+    }
+    catch(e: any) {
+        return validationError(c, `Conversion error: ${e.message}`)
+    }
 
     const { success } = await c.env.DB.prepare(`
         INSERT INTO servers (id, created, lastseen, data) VALUES(?, DATETIME(), DATETIME(), json(?))
@@ -218,7 +244,7 @@ async function initStatsDb(c: Context, next: Function) {
 }
 
 async function validationError(c: Context, message?: string) {
-    console.error(`Validation error (${message})`, await c.req.json())
+    console.error(`Validation error (${message})`, { ...(await c.req.json()), id: c.req.param('id') })
     c.status(201)
     return c.text("");
 }
