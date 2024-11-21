@@ -443,6 +443,31 @@ export class StatsDb {
             GROUP BY bucket
         `).all()
 
+        // summarize versions older than X in an "other" bucket
+        let minVersion = '';
+        const i = args.keys?.findIndex((k: string) => k === 'version')
+        if (i !== undefined && i >= 0 && args.values) {
+            minVersion = (args.values as Array<string>)[i]
+        }
+
+        results.forEach((r: any) => {
+            let others = 0
+
+            const versions = JSON.parse(r.v).filter((version: any) => {
+                const k = Object.keys(version)[0]
+                if (k && k >= minVersion && k < '9999')
+                    return true
+                else {
+                    others += version[k]
+                    return false
+                }
+            })
+
+            if (others) versions.push({ others })
+
+            r.v = JSON.stringify(versions)
+        })
+
         return this.cacheResults(results, { identifier: queryIdentifier.history, ...args })
     }
 
