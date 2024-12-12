@@ -176,42 +176,14 @@ app.post('/api/instance/:id/', async (c: Context) => {
     }
 
     // we've fucked up LMS9: it would report any player, whether connected or not... at least
-    // a first time. Let's not update the players if there are more than
+    // a first time. Let's not update the players if there are more than X new players
     if (version === '9.0.0' && players > 3) {
-        const playerCount = await c.env.DB.prepare(`
-            SELECT JSON_EXTRACT(data, '$.players') AS p
-            FROM servers
-            WHERE id = ?
-        `).bind(id).first('p')
-
-        if (playerCount && players - playerCount > 2) {
-            data.players = playerCount
-        }
+        await tweakPlayersFromExistingRecord(c, id, data, (results) => results.pc && players - results.pc > 3)
     }
 
     // don't downgrade an installation to zero players - use previous values instead, if available
     if (players == 0) {
-        const results = await c.env.DB.prepare(`
-            SELECT JSON_EXTRACT(data, '$.players') AS pc, JSON_EXTRACT(data, '$.playerTypes') AS pt, JSON_EXTRACT(data, '$.playerModels') AS pm
-            FROM servers
-            WHERE id = ?
-        `).bind(id).first()
-
-        if (results) {
-            const { pc, pt, pm } = results;
-
-            data.players = parseInt(pc || 0)
-
-            if (pt) {
-                try { data.playerTypes = JSON.parse(pt) }
-                catch(e) { console.error(e) }
-            }
-
-            if (pm) {
-                try { data.playerModels = JSON.parse(pm) }
-                catch(e) { console.error(e) }
-            }
-        }
+        await tweakPlayersFromExistingRecord(c, id, data)
     }
 
     let dataJSON;
@@ -236,6 +208,34 @@ app.post('/api/instance/:id/', async (c: Context) => {
         return c.text("Something went wrong")
     }
 })
+
+async function tweakPlayersFromExistingRecord(c: Context, id: string, data: any, condition = (r: any) => true): Promise<any> {
+    if (!id) return
+
+    const results = await c.env.DB.prepare(`
+        SELECT JSON_EXTRACT(data, '$.players') AS pc, JSON_EXTRACT(data, '$.playerTypes') AS pt, JSON_EXTRACT(data, '$.playerModels') AS pm
+        FROM servers
+        WHERE id = ?
+    `).bind(id).first()
+
+    if (results && condition(results)) {
+        const { pc, pt, pm } = results
+
+        data.players = parseInt(pc || 0)
+
+        if (pt) {
+            try { data.playerTypes = JSON.parse(pt) }
+            catch (e) { console.error(e) }
+        }
+
+        if (pm) {
+            try { data.playerModels = JSON.parse(pm) }
+            catch (e) { console.error(e) }
+        }
+    }
+
+    return data
+}
 
 async function parseFilterFromQuery(c: Context, next: Function) {
     const days = parseInt(c.req.query('days') as string)
