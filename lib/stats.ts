@@ -430,6 +430,12 @@ export class StatsDb {
     }
 
     async getHistory(args: QueryArgs): Promise<Object[]> {
+        let condition: String = ""
+
+        if (args.secs) {
+            condition = `WHERE UNIXEPOCH(DATETIME()) - UNIXEPOCH(date) < ${args.secs}`
+        }
+
         const { results } = await this.db.prepare(`
             SELECT MAX(d) AS d, o, v, p FROM (
                 SELECT NTILE(${MAX_HISTORY_BINS}) OVER date AS bucket,
@@ -438,6 +444,7 @@ export class StatsDb {
                     JSON_EXTRACT(data, '$.versions') AS v,
                     JSON_EXTRACT(data, '$.players') AS p
                 FROM summary
+                ${condition}
                 WINDOW date AS (ORDER BY date)
             )
             GROUP BY bucket
