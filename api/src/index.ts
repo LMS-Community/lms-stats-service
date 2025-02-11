@@ -105,7 +105,7 @@ app.post('/api/instance/:id/', async (c: Context) => {
 
     if (!rateOk) {
         c.status(429)
-        return c.text(`429 Failure – rate limit exceeded, try again in a few minutes`)
+        return c.text('429 Failure - rate limit exceeded, try again in a few minutes')
     }
 
     const { id } = c.req.param()

@@ -358,6 +358,11 @@ export class StatsDb {
         else if (player.match(/^Pure_/i)) player = 'Pure'
         else if (player.match(/^OLADRA/)) player = 'OLADRA'
         else if (player.match(/^Antipodes/i)) player = 'Antipodes'
+        else if (player.match(/Daphile/)) player = 'Daphile'
+        else if (player.match(/Squeezelite-X/i)) player = 'SqueezeLite-X'
+        else if (player.match(/squeezeli.e/i)) player = 'Squeezelite'
+        else if (player.match(/iphone.*ipeng/i)) player = 'iPeng iPhone'
+        else if (player.match(/ipad.*ipeng/i)) player = 'iPeng iPad'
         else if (player == '') player = 'Unknown'
 
         return player
