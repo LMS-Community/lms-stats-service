@@ -24,8 +24,11 @@ export const playerTypesMap: { [k: string]: string} = {
     ipengipad: 'iPeng iPad',
     ipengipod: 'iPeng iPhone',
     'ipeng ipad': 'iPeng iPad',
+    'ipad ipeng': 'iPeng iPad',
     'ipeng ipod': 'iPeng iPhone',
+    'ipod ipeng': 'iPeng iPhone',
     'ipeng iphone': 'iPeng iPhone',
+    'iphone ipeng': 'iPeng iPhone',
     m6encore: 'M6 Encore',
     receiver: 'Squeezebox Receiver',
     'ropieee [ropieeexl]': 'Ropieee',
@@ -39,6 +42,7 @@ export const playerTypesMap: { [k: string]: string} = {
     'squeezebox classic': 'Squeezebox 2/3/Classic',
     squeezeesp32: 'SqueezeESP32',
     squeezelite: 'Squeezelite',
+    'squeezelite-x': 'Squeezelite-X',
     squeezeplay: 'SqueezePlay',
     squeezeplayer: 'SqueezePlayer',
     squeezeslave: 'Squeezeslave',
@@ -359,10 +363,9 @@ export class StatsDb {
         else if (player.match(/^OLADRA/)) player = 'OLADRA'
         else if (player.match(/^Antipodes/i)) player = 'Antipodes'
         else if (player.match(/Daphile/)) player = 'Daphile'
-        else if (player.match(/Squeezelite-X/i)) player = 'SqueezeLite-X'
+        else if (player.match(/piCorePlayer|pCP/i)) player = 'Squeezelite-pCP'
+        else if (player.match(/Squeezelite-X/i)) player = 'Squeezelite-X'
         else if (player.match(/squeezeli.e/i)) player = 'Squeezelite'
-        else if (player.match(/iphone.*ipeng/i)) player = 'iPeng iPhone'
-        else if (player.match(/ipad.*ipeng/i)) player = 'iPeng iPad'
         else if (player == '') player = 'Unknown'
 
         return player
