@@ -363,7 +363,7 @@ export class StatsDb {
         else if (player.match(/^OLADRA/)) player = 'OLADRA'
         else if (player.match(/^Antipodes/i)) player = 'Antipodes'
         else if (player.match(/Daphile/)) player = 'Daphile'
-        else if (player.match(/piCorePlayer|pCP/i)) player = 'Squeezelite-pCP'
+        else if (player.match(/piCorePlayer|pCP|SqueezeLiteBT/i)) player = 'Squeezelite-pCP'
         else if (player.match(/Squeezelite-X/i)) player = 'Squeezelite-X'
         else if (player.match(/squeezeli.e/i)) player = 'Squeezelite'
         else if (player == '') player = 'Unknown'
