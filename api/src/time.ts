@@ -17,7 +17,6 @@ app.get('/:region/:country', async c => {
 })
 
 function getTimeInformation(timezone = 'UTC') {
-    timezone = timezone.toLowerCase()
     const dateTime = DateTime.now().setZone(timezone);
 
     if (!dateTime.isValid) {
