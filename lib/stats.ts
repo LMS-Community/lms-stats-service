@@ -451,7 +451,7 @@ export class StatsDb {
                     JSON_EXTRACT(data, '$.os') AS o,
                     JSON_EXTRACT(data, '$.versions') AS v,
                     JSON_EXTRACT(data, '$.players') AS p,
-                    JSON_EXTRACT(data, '$.playerTypes') AS t
+                    JSON_EXTRACT(data, '$.playerModels') AS t
                 FROM summary
                 ${condition}
                 WINDOW date AS (ORDER BY date)
