@@ -445,12 +445,13 @@ export class StatsDb {
         }
 
         const { results } = await this.db.prepare(`
-            SELECT MAX(d) AS d, o, v, p FROM (
+            SELECT MAX(d) AS d, o, v, p, t FROM (
                 SELECT NTILE(${MAX_HISTORY_BINS}) OVER date AS bucket,
                     date AS d,
                     JSON_EXTRACT(data, '$.os') AS o,
                     JSON_EXTRACT(data, '$.versions') AS v,
-                    JSON_EXTRACT(data, '$.players') AS p
+                    JSON_EXTRACT(data, '$.players') AS p,
+                    JSON_EXTRACT(data, '$.playerTypes') AS t
                 FROM summary
                 ${condition}
                 WINDOW date AS (ORDER BY date)
