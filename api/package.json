@@ -8,13 +8,11 @@
     "start": "wrangler dev"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250327.0",
-    "@types/luxon": "^3.6.0",
-    "typescript": "^5.8.2",
-    "wrangler": "^4.6.0"
+    "@cloudflare/workers-types": "^4.20250515.0",
+    "typescript": "^5.8.3",
+    "wrangler": "^4.15.2"
   },
   "dependencies": {
-    "hono": "^4.7.5",
-    "luxon": "^3.6.1"
+    "hono": "^4.7.9"
   }
 }

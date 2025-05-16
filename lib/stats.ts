@@ -321,7 +321,9 @@ export class StatsDb {
                 SELECT JSON_TREE.value AS value
                 FROM (
                     SELECT CASE
+                        WHEN data ->> '$.osname' = 'Debian' AND data ->> '$.plugins' LIKE '%MQALink%' AND data LIKE '%playerModels%' THEN REPLACE(JSON_OBJECT('playerTypes', JSON_EXTRACT(data, '$.playerModels')), '"SqueezeLite"', '"Squeezelite-Innuos"')
                         WHEN data LIKE '%playerModels%' THEN JSON_OBJECT('playerTypes', JSON_EXTRACT(data, '$.playerModels'))
+                        WHEN data ->> '$.osname' = 'Debian' AND data ->> '$.plugins' LIKE '%MQALink%' THEN REPLACE(JSON_EXTRACT(data, '$.playerTypes'), '"SqueezeLite"', '"Squeezelite-Innuos"')
                         ELSE JSON_OBJECT('playerTypes', JSON_EXTRACT(data, '$.playerTypes'))
                     END AS data
                     FROM servers
@@ -365,6 +367,8 @@ export class StatsDb {
         else if (player.match(/Daphile/)) player = 'Daphile'
         else if (player.match(/piCorePlayer|pCP|SqueezeLiteBT/i)) player = 'Squeezelite-pCP'
         else if (player.match(/Squeezelite-X/i)) player = 'Squeezelite-X'
+        // we already handle Innuos in the query above
+        else if (player.match(/SqueezeLite-Innuos/i)) {}
         else if (player.match(/squeezeli.e/i)) player = 'Squeezelite'
         else if (player == '') player = 'Unknown'
 
