@@ -1,3 +1,4 @@
+const DISABLE_CACHE = false
 export interface QueryArgs {
     identifier?: string;
     secs?: number;
@@ -386,6 +387,7 @@ export class StatsDb {
             SELECT COUNT(1) AS c, (os || " - " || platform) AS v
             FROM (
                 SELECT CASE
+                    WHEN osname = 'Linux' AND revision LIKE 'ARCH%' THEN 'Arch Linux'
                     WHEN osname LIKE '%windows%' AND osname LIKE '%64-bit%' THEN 'Windows (64-bit)'
                     WHEN osname LIKE '%windows%' THEN 'Windows (32-bit)'
                     WHEN osname LIKE '%Debian%Docker%' THEN 'Debian (Docker)'
@@ -397,7 +399,7 @@ export class StatsDb {
                     ELSE osname
                 END AS os, REPLACE(platform, '-linux', '') AS platform
                 FROM (
-                    SELECT JSON_EXTRACT(data, '$.osname') AS osname, JSON_EXTRACT(data, '$.platform') AS platform
+                    SELECT data ->> '$.osname' AS osname, data ->> '$.revision' as revision, data ->> '$.platform' AS platform
                     FROM servers
                     ${ this.getConditions(secs, keys) }
                 )
@@ -496,8 +498,10 @@ export class StatsDb {
         let response
 
         try {
-            const cached = await this.qc.get(cacheKey)
-            response = JSON.parse(cached)
+            if (!DISABLE_CACHE) {
+                const cached = await this.qc.get(cacheKey)
+                response = JSON.parse(cached)
+            }
         }
         catch(e) {
             console.warn(`failed to parse query cache: ${e}`)
