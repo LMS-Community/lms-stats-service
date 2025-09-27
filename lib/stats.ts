@@ -356,9 +356,10 @@ export class StatsDb {
         player = playerTypesMap[(player as string).toLowerCase()] || player
 
         // this seems to be created dynamically, can't be mapped statically
-        if (player.match(/ropi.*ee/i)) player = 'Ropieee'
+        if (player.match(/\bropi/i)) player = 'Ropieee'
         else if (player.match(/^Aroio/)) player = 'AroioOS'
         else if (player.match(/^Yulong/)) player = 'Yulong'
+        else if (player.match(/^Wiim\b/i)) player = 'WiiM Player'
         else if (player.match(/^Topping/)) player = 'Topping'
         else if (player.match(/^MusicServer4|MS4H/i)) player = 'MusicServer4(Home|Loxone)'
         else if (player.match(/RHEOS:/)) player = 'Denon RHEOS'
@@ -366,11 +367,13 @@ export class StatsDb {
         else if (player.match(/^OLADRA/)) player = 'OLADRA'
         else if (player.match(/^Antipodes/i)) player = 'Antipodes'
         else if (player.match(/Daphile/)) player = 'Daphile'
+        else if (player.match(/\bK50/)) player = 'K50player'
+        else if (player.match(/DMP-A\d+/i)) player = 'Eversolo DMP-Ax'
         else if (player.match(/piCorePlayer|pCP|SqueezeLiteBT/i)) player = 'Squeezelite-pCP'
         else if (player.match(/Squeezelite-X/i)) player = 'Squeezelite-X'
         // we already handle Innuos in the query above
         else if (player.match(/SqueezeLite-Innuos/i)) {}
-        else if (player.match(/squeezeli.e/i)) player = 'Squeezelite'
+        else if (player.match(/squeezeli.e|SqzLite/i)) player = 'Squeezelite'
         else if (player == '') player = 'Unknown'
 
         return player
