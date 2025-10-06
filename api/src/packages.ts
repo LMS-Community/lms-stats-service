@@ -23,7 +23,7 @@ app.get('/pulls', DEBUG ? async (_: Context, next: Function) => { await next() }
         }
     })
 
-    let pulls = 0
+    let pulls = '0'
 
     if (!containerPage.body) {
         return c.json({
@@ -42,9 +42,9 @@ app.get('/pulls', DEBUG ? async (_: Context, next: Function) => { await next() }
                 getNext = true
             }
             else if (getNext) {
-                const matches = line.match(/>(\d+[km]*)</i)
+                const matches = line.match(/>([\d.]+[km]*)</i)
                 if (matches && matches[1]) {
-                    pulls = parseInt(matches[1])
+                    pulls = matches[1]
                     break
                 }
             }
