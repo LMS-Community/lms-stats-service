@@ -1,5 +1,5 @@
 import { Hono } from 'hono/tiny'
-import { Context } from 'hono'
+import { Context, Next } from 'hono'
 
 const app = new Hono()
 
@@ -73,7 +73,7 @@ app.get('/:dataset', parseFilterFromQuery, initStatsDb, async (c: Context) => {
     }
 })
 
-async function parseFilterFromQuery(c: Context, next: Function) {
+async function parseFilterFromQuery(c: Context, next: Next) {
     const days = parseInt(c.req.query('days') as string)
 
     if (days && Number.isInteger(+days)) c.set('secs', days * 86400)
