@@ -21,9 +21,8 @@ id = "13e6c04191f1412dbbc31f149426f0e9"
 preview_id = "2acedb221c054429b97ab91c1478e3cc"
 
 # The rate limiting API is in open beta.
-[[unsafe.bindings]]
+[[ ratelimits ]]
 name = "STATS_UPDATE_LIMITER"
-type = "ratelimit"
 # An identifier you define, that is unique to your Cloudflare account.
 # Must be an integer.
 namespace_id = "3483"
