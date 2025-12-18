@@ -442,6 +442,33 @@ export class StatsDb {
         })
     }
 
+    async getPluginDetailsC(args: QueryArgs): Promise<Object> {
+        if (!args?.identifier) return {}
+        return await this.withCache(this.getPluginDetails, args)
+    }
+
+    async getPluginDetails(args: QueryArgs): Promise<Object> {
+        const { identifier = '', secs = 0 } = args
+
+        if (!identifier) return {}
+
+        let condition: String = ""
+
+        if (args.secs) {
+            condition = `AND UNIXEPOCH(DATETIME()) - UNIXEPOCH(date) < ${args.secs}`
+        }
+
+        const { results } = await this.db.prepare(`
+            SELECT date, json_extract(json_each.value, :1) AS count
+            FROM summary, json_each(data, '$.plugins')
+            WHERE json_type(json_each.value, :1) IS NOT NULL
+            ${condition}
+            ORDER BY date ASC;
+        `).bind(`$.${identifier}`).all()
+
+        return this.cacheResults(results.map((item: { [key: string]: any }) => item ), args)
+    }
+
     async getHistoryC(args: QueryArgs): Promise<ValueCountsObject[]> {
         return await this.withCache(this.getHistory, { identifier: queryIdentifier.history, ...args })
     }

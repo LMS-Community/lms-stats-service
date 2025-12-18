@@ -73,6 +73,22 @@ app.get('/:dataset', parseFilterFromQuery, initStatsDb, async (c: Context) => {
     }
 })
 
+app.get('/plugins/:plugin', parseFilterFromQuery, initStatsDb, async (c: Context) => {
+    const plugin = c.req.param('plugin')
+
+    if (!plugin) return c.text('400 Bad Request', 400)
+
+    const statsDb = c.var.statsDb
+
+    try {
+        return c.json(await statsDb.getPluginDetailsC({ identifier: plugin, secs: c.var.secs }))
+    }
+    catch(e) {
+        console.error(e)
+        return c.json({err: e}, 500)
+    }
+})
+
 async function parseFilterFromQuery(c: Context, next: Next) {
     const days = parseInt(c.req.query('days') as string)
 
